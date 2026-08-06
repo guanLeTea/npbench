@@ -33,7 +33,7 @@ def pressure_poisson(nit, p, dx, dy, b):
 
 
 @nb.jit(nopython=True, parallel=True, fastmath=True)
-def nopython_mode(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
+def cavity_flow(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
     un = np.zeros_like(u)
     vn = np.zeros_like(v)
     b = np.zeros((ny, nx))
