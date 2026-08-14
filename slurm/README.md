@@ -1,5 +1,34 @@
 # NPBench on CSCS Daint/Alps
 
+## Campaign base
+
+The M campaign runs on branch **`bench/daint-pluto`**, which is
+**spcl/npbench PR #47** (`fix/well-conditioned-gramschmidt-and-zeros-init`, tip `3944369`)
+with our three commits rebased on top. PR #47's base is upstream `main` at `f2d7f27`.
+
+**Not plain `main`.** PR #47 makes the benchmark inputs deterministic and well-conditioned,
+which is a precondition for comparable numbers:
+
+| Change | Kernels |
+|---|---|
+| `np.empty` -> `np.zeros` in the input generator | `cholesky`, `cholesky2`, `lu`, `ludcmp`, `symm` |
+| `np.empty_like` -> `np.zeros_like` inside the kernel | `deriche` (y1, y2), `durbin` (y) |
+| deterministic well-conditioned input (replaces a nondeterministic `while matrix_rank(A) < N` resample) | `gramschmidt` |
+| input drawn from the seeded generator | `mlp` |
+| new `dace_canonicalize_cpu` / `dace_canonicalize_gpu` columns | — |
+| `openmp_array_reductions = False` pinned for `dace_cpu`/`dace_gpu` | — |
+
+Two commits in PR #47 (`c77d0f4`, `3944369`) also rename kernel functions in `pythran`,
+`numba_np`, `legate` and `dask` variants. None of those columns is in this campaign, and no
+`_numpy.py` or `_dace.py` file is touched by them.
+
+**Known wart in PR #47:** commit `3944369` also commits a 45 KB `npbench.db` (155 numpy/numba
+rows from another machine) into the repo root. NPBench *appends* to whatever `npbench.db` it
+finds in the CWD, so an interactive run started from the repo root would mix those rows into
+its own. The launcher is unaffected -- every rank runs from its own directory -- but the file
+should be deleted before it causes confusion.
+
+
 Everything in this directory is site-specific: the uenv name, the scratch paths and the account are
 Daint's. Nothing here is upstream NPBench.
 
@@ -59,8 +88,10 @@ python run_benchmark.py -b <benchmark> -f <framework> -p <preset> -r <repeat>
 python run_framework.py  -f <framework> -p <preset>          # every benchmark
 ```
 
-Frameworks: `numpy`, `dace_cpu`, `pluto`. `dace_cpu` builds and times three SDFG variants per
-kernel (`fusion`, `parallel`, `auto_opt`) and records all three.
+Frameworks: `numpy`, `dace_cpu`, `dace_canonicalize_cpu`, `pluto`. `dace_cpu` builds and times
+three SDFG variants per kernel (`fusion`, `parallel`, `auto_opt`) and records all three;
+`dace_canonicalize_cpu` (from PR #47) times the fork's canonicalize pipeline as one variant and
+turns ON OpenMP array-section reductions, which `dace_cpu` deliberately leaves off.
 
 Every non-NumPy column is validated against the NumPy reference on its first execution; the verdict
 is stored per row in the `validated` column of `npbench.db`.
