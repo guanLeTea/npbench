@@ -1,0 +1,10 @@
+{
+    "framework": {
+        "simple_name": "pluto",
+        "full_name": "Pluto",
+        "prefix": "pl",
+        "postfix": "pluto",
+        "class": "PlutoFramework",
+        "arch": "cpu"
+    }
+}
