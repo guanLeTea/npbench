@@ -5,7 +5,44 @@ import pkg_resources
 import traceback
 
 from npbench.infrastructure import Benchmark, Framework, utilities as util
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Optional, Sequence, Tuple
+
+
+def _dace_tree() -> Optional[str]:
+    """The directory of the imported ``dace`` package, or None if it will not import."""
+    try:
+        import dace
+        return os.path.dirname(os.path.abspath(dace.__file__))
+    except Exception:
+        return None
+
+
+def _git_stamp(path: Optional[str]) -> Optional[str]:
+    """``<branch>@<short-commit>`` for the checkout containing ``path``, ``-dirty`` if modified.
+
+    Best effort: any failure (not a repository, no git, detached HEAD) degrades to a partial
+    stamp or None. Recording the version of a benchmark run must never be able to fail it.
+    """
+    if not path:
+        return None
+    import subprocess
+
+    def _git(*args: str) -> Optional[str]:
+        try:
+            out = subprocess.run(("git", "-C", path) + args, capture_output=True, text=True, timeout=15)
+        except Exception:
+            return None
+        return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else None
+
+    commit = _git("rev-parse", "--short", "HEAD")
+    if not commit:
+        return None
+    # A dirty tree is NOT the commit it claims to be. Say so rather than stamping a commit
+    # that does not describe the code that ran.
+    if _git("status", "--porcelain", "--untracked-files=no"):
+        commit += "-dirty"
+    branch = _git("rev-parse", "--abbrev-ref", "HEAD")
+    return "{b}@{c}".format(b=branch, c=commit) if branch and branch != "HEAD" else commit
 
 
 class DaceFramework(Framework):
@@ -26,8 +63,24 @@ class DaceFramework(Framework):
         super().__init__(fname)
 
     def version(self) -> str:
-        """ Return the framework version. """
-        return pkg_resources.get_distribution("dace").version
+        """ Return the framework version, stamped with the DaCe tree it was measured on.
+
+        The distribution version alone (``2.0.0a5``) is the same string for every branch and
+        every commit of a DaCe checkout, so two campaigns measured on different trees produce
+        rows that are indistinguishable and silently comparable. When DaCe is an editable
+        install -- which is how it is used here -- the tree can move under the same version at
+        any time. This appends ``+<branch>@<commit>`` so the ``version`` column of npbench.db
+        identifies the code that ran.
+
+        ``NPBENCH_DACE_BUILD`` overrides the probe, for a tree that is not a git checkout.
+        A tree whose branch cannot be determined is stamped with the commit alone; one that is
+        not a repository at all falls back to the bare version rather than failing a run.
+        """
+        base = pkg_resources.get_distribution("dace").version
+        stamp = os.environ.get("NPBENCH_DACE_BUILD")
+        if not stamp:
+            stamp = _git_stamp(_dace_tree())
+        return "{v}+{s}".format(v=base, s=stamp) if stamp else base
 
     def copy_func(self) -> Callable:
         """ Returns the copy-method that should be used 
