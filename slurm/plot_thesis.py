@@ -442,8 +442,8 @@ def main():
     rows, groups, stamps = build_rows(args)
     if not args.subcaption:
         dace = sorted({v.split("+", 1)[1] for v in stamps if v and "+" in v})
-        args.subcaption = ("DaCe column: %s%s   |   Pluto: polycc --tile --parallel --codegen-context=1, "
-                           "clang -O3 -march=native"
+        args.subcaption = ("DaCe column: %s%s   |   Pluto: polycc --tile --parallel "
+                           "--codegen-context=1 (Clan frontend), clang -O3 -march=native"
                            % (args.dace_framework, (" / " + ", ".join(dace)) if dace else ""))
 
     cmap = diverging()
