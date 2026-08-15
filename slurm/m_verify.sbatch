@@ -44,7 +44,10 @@ JOB="${SLURM_JOB_ID:-local}"
 export PRESET="${PRESET:-M}"
 export REPEAT="${REPEAT:-1}"
 export TIMEOUT="${TIMEOUT:-600}"
-export FRAMEWORKS="${FRAMEWORKS:-numpy pluto dace_cpu}"
+# The thesis comparison: NumPy baseline, Pluto, and DaCe CPU auto_optimize as ONE named
+# pipeline. dace_cpu_autoopt builds only the auto_opt SDFG, so this campaign is
+# structurally incapable of reporting the best of three DaCe transformations.
+export FRAMEWORKS="${FRAMEWORKS:-numpy pluto dace_cpu_autoopt}"
 
 RPN="${SLURM_NTASKS_PER_NODE:-4}"; RPN="${RPN%%(*}"
 export RANKS="${SLURM_NTASKS:-${RPN}}"
@@ -159,6 +162,7 @@ echo "=== classifying every (kernel, framework) pair ==="
 python "${REPO}/slurm/collect_status.py" \
     --logs "${NS}/logs" --kernels "${NS}/kernels.txt" --db "${NS}/npbench.db" \
     --preset "${PRESET}" --frameworks "${FRAMEWORKS}" \
+    --joblog "${NS}/slurm-${JOB}.out" \
     --json "${NS}/status.json" --summary "${NS}/summary.txt"
 cat "${NS}/summary.txt"
 
@@ -166,6 +170,7 @@ echo ""
 echo "=== plot ==="
 python "${REPO}/slurm/plot_m_verify.py" --db "${NS}/npbench.db" --status "${NS}/status.json" \
     --kernels "${NS}/kernels.txt" --preset "${PRESET}" --repeat "${REPEAT}" \
+    --dace-framework "${DACE_FRAMEWORK:-dace_cpu_autoopt}" \
     --output "${NS}/m-verify-${JOB}.pdf"
 
 echo ""

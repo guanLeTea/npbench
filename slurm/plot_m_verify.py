@@ -66,8 +66,8 @@ def runtime_label(t):
     return "%.2f ms" % (t * 1000) if t < 0.1 else "%.2f s" % t
 
 
-def dace_build(db):
-    """The DaCe build stamp recorded on the rows, e.g. ``extended@eb7b1352a``.
+def dace_build(db, framework="dace_cpu"):
+    """The DaCe build stamp recorded on ``framework``'s rows, e.g. ``extended@eb7b1352a``.
 
     ``DaceFramework.version()`` writes ``<version>+<branch>@<commit>``, so the tree a column was
     measured on is recoverable from the database itself rather than having to be asserted in a
@@ -76,7 +76,7 @@ def dace_build(db):
     try:
         conn = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
         vs = [v for (v, ) in conn.execute(
-            "select distinct version from results where framework = 'dace_cpu'")]
+            "select distinct version from results where framework = ?", (framework, ))]
         conn.close()
     except Exception:
         return None
@@ -126,10 +126,14 @@ def main():
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--kernels", help="file with one kernel name per line (defines the row order)")
     ap.add_argument("--title", default="NPBench PolyBench-derived kernels")
+    ap.add_argument("--dace-framework", default="dace_cpu_autoopt",
+                    help="which DaCe column to plot (default dace_cpu_autoopt, the thesis "
+                         "comparison). Use dace_cpu to plot the three-variant framework.")
     ap.add_argument("--dace-variant",
-                    help="pin the DaCe SDFG variant (e.g. auto_opt). Without it, the fastest "
-                         "validated variant is used, which compares Pluto against a per-kernel "
-                         "search rather than against one pipeline.")
+                    help="pin the DaCe SDFG variant (e.g. auto_opt). Needed only for the "
+                         "multi-variant dace_cpu framework; without it the fastest validated "
+                         "variant is used, which compares Pluto against a per-kernel search "
+                         "rather than against one pipeline.")
     ap.add_argument("--build", help="DaCe build label for the caption; read from the DB when omitted")
     args = ap.parse_args()
 
@@ -158,33 +162,38 @@ def main():
         dk = db_key(k)
         np_t, _ = best_valid(data.get((dk, "numpy"), {}))
         entry = {"kernel": k, "numpy": np_t}
-        for fw in ("pluto", "dace_cpu"):
+        # Keyed by ROLE ("pluto" / "dace"), not by framework name, so which DaCe framework fills
+        # the column is a caller's choice rather than something the drawing code knows about.
+        for role, fw in (("pluto", "pluto"), ("dace", args.dace_framework)):
             variants = data.get((dk, fw), {})
-            pin = args.dace_variant if fw == "dace_cpu" else None
+            pin = args.dace_variant if role == "dace" else None
             t, variant = best_valid(variants, pin)
             st = (status.get(k, {}) or {}).get(fw, {})
             if t is not None and np_t:
-                entry[fw] = {"status": "validated", "speedup": np_t / t, "time": t, "variant": variant}
+                entry[role] = {"status": "validated", "speedup": np_t / t, "time": t, "variant": variant}
             elif variants and pin and not any(n == pin and v for (n, v) in variants):
                 # The kernel ran, but the PINNED variant is not among its validated results.
                 # Reported as its own state: substituting a sibling here would silently answer a
                 # different question than the one the pin asks.
-                entry[fw] = {"status": "invalid",
-                             "reason": "variant %r not validated for this kernel" % pin}
+                entry[role] = {"status": "invalid",
+                               "reason": "variant %r not validated for this kernel" % pin}
             elif variants:
-                entry[fw] = {"status": "invalid", "reason": st.get("reason", "ran but did not validate")}
+                entry[role] = {"status": "invalid", "reason": st.get("reason", "ran but did not validate")}
             else:
-                entry[fw] = {
+                entry[role] = {
                     "status": st.get("status", "missing"),
                     "reason": st.get("reason", "no result recorded"),
                 }
         rows.append(entry)
 
-    build = args.build or dace_build(args.db)
+    build = args.build or dace_build(args.db, args.dace_framework)
     if args.dace_variant:
-        dace_label = "DaCe CPU %s%s" % (args.dace_variant, " / %s" % build if build else "")
+        dace_label = "%s [%s]%s" % (args.dace_framework, args.dace_variant,
+                                    " / %s" % build if build else "")
     else:
-        dace_label = "DaCe CPU (fastest validated variant per kernel)"
+        dace_label = "%s%s" % (args.dace_framework, " / %s" % build if build else "")
+        if args.dace_framework == "dace_cpu":
+            dace_label += "  (fastest validated variant per kernel)"
 
     sub = ("preset %s, REPEAT=%d - VERIFICATION RUN, not a performance measurement\n"
            "DaCe column = %s" % (args.preset, args.repeat, dace_label))
@@ -201,7 +210,7 @@ def _bars(pdf, rows, title, sub, dace_label="DaCe CPU"):
     y = np.arange(n)
     h = 0.38
     for off, fw, colour, label in ((+h / 2, "pluto", "#1565c0", "Pluto (polycc --pet --tile --parallel)"),
-                                   (-h / 2, "dace_cpu", "#ef6c00", dace_label)):
+                                   (-h / 2, "dace", "#ef6c00", dace_label)):
         vals, ypos = [], []
         for i, r in enumerate(rows):
             e = r[fw]
@@ -211,7 +220,7 @@ def _bars(pdf, rows, title, sub, dace_label="DaCe CPU"):
         ax.barh(ypos, vals, height=h, color=colour, label=label, zorder=3)
     # Everything that produced no speedup, marked in place so a gap is never ambiguous.
     for i, r in enumerate(rows):
-        for off, fw in ((+h / 2, "pluto"), (-h / 2, "dace_cpu")):
+        for off, fw in ((+h / 2, "pluto"), (-h / 2, "dace")):
             e = r[fw]
             if e["status"] != "validated":
                 ax.text(1.03, y[i] + off, e["status"], va="center", ha="left", fontsize=6.5,
@@ -240,9 +249,9 @@ def _table(pdf, rows, title, sub):
     cols = ["kernel", "NumPy (baseline)", "Pluto", "DaCe CPU", "DaCe variant", "notes"]
     cells, colours = [], []
     for r in rows:
-        p, d = r["pluto"], r["dace_cpu"]
+        p, d = r["pluto"], r["dace"]
         note = ""
-        for fw, e in (("pluto", p), ("dace_cpu", d)):
+        for fw, e in (("pluto", p), ("dace", d)):
             if e["status"] != "validated":
                 note = ("%s: %s" % (fw, e.get("reason", e["status"])))[:76]
         cells.append([

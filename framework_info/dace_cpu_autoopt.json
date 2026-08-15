@@ -1,0 +1,10 @@
+{
+    "framework": {
+        "simple_name": "dace_cpu_autoopt",
+        "full_name": "DaCe CPU auto_opt",
+        "prefix": "dc",
+        "postfix": "dace",
+        "class": "DaceAutoOptFramework",
+        "arch": "cpu"
+    }
+}

@@ -129,7 +129,7 @@ def main():
         db_name = short_name(repo, k)
         for fw in frameworks:
             got = by_pair.get((db_name, fw), [])
-            pin = args.dace_variant if fw == "dace_cpu" else None
+            pin = args.dace_variant if fw.startswith("dace") else None
             # With a pin, a sibling variant validating is NOT an answer to the question asked:
             # the campaign is comparing one named pipeline, not the best of several.
             hits = [(d, v, t) for d, v, t in got if pin is None or d == pin]
