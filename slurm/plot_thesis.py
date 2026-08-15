@@ -54,6 +54,10 @@ NUMPY_FILL = "#fdf6d0"
 GAP_FILL = "#e4e7e9"
 GAP_EDGE = "#9aa5ab"
 
+#: Lines a page-2 note may occupy. Four 100-character lines at 0.26 row-units of leading fit
+#: inside one row's height without touching its neighbours; a fifth would overlap.
+_NOTE_LINES = 4
+
 STATUS_SHORT = {
     "declined": "declined",
     "error": "crashed",
@@ -115,11 +119,26 @@ def short_reason(status, reason):
                 "guard is undefined at run time and silently skips its loop. Fixed for the "
                 "recovered kernels by --codegen-context=1; this kernel still trips it.")
 
-    if "differ semantically" in r:
-        return ("Semantic incompatibility, not a Pluto failure: the port computes b = 1.0 + mul2 "
-                "where PolyBench/C 4.2.1 computes b = 1.0 + mul1 (81 vs 161 at these sizes), so the "
-                "two solve different tridiagonal systems. No argument mapping can reconcile that, "
-                "so the kernel is refused before transformation.")
+    if "differ semantically" in r and "b = 1.0 + mul2" in r:
+        return ("Semantic incompatibility, not a Pluto failure: the port sets b = 1.0 + mul2 where "
+                "PolyBench/C 4.2.1 sets b = 1.0 + mul1, so the two solve different tridiagonal "
+                "systems (81 vs 161 at preset S). Present since NPBench's first commit and identical "
+                "in all ten adi implementations -- an upstream porting bug, but correcting it would "
+                "change what the suite measures.")
+
+    if "differ semantically" in r and "normalization" in r:
+        return ("Semantic incompatibility, not a Pluto failure: the port's constant k has "
+                "denominator 1.0 + alpha*exp(-alpha) - exp(2*alpha) where PolyBench/C 4.2.1 has "
+                "1.0 + 2.0*alpha*exp(-alpha); the factor 2.0 is missing. k scales a1..a8, so every "
+                "pixel is scaled -- relative error 2.07. Reproduced on the untransformed reference, "
+                "so nothing Pluto did is involved.")
+
+    if "parallelization is unsound" in r:
+        return ("Generated C: the transformation is correct but its parallel decoration is not. "
+                "polycc marks the tiled i loop omp parallel for while the kernel reads row k+1 of "
+                "table as another thread writes it. At N=200: 0 of 20 runs differ on one thread, "
+                "20 of 20 on eight and on 32. It is the one failure that can pass validation by "
+                "luck, so it is refused up front.")
 
     if "killed by signal" in r:
         return ("Run time: polycc transforms and clang compiles cleanly, but the transformed "
@@ -196,7 +215,9 @@ def build_rows(args):
                 t, variant = pick(var, pin)
                 st = (status.get(k, {}) or {}).get(fw, {})
                 if t is not None and nt:
-                    e[role] = {"status": "validated", "speedup": nt / t, "time": t, "variant": variant}
+                    e[role] = {"status": "validated", "speedup": nt / t, "time": t, "variant": variant,
+                               # a validated measurement can still be single-threaded; see page 2
+                               "sequential": bool(st.get("sequential"))}
                 elif var:
                     e[role] = {"status": "invalid",
                                "reason": ("variant %r not validated" % pin) if pin else
@@ -363,10 +384,27 @@ def page_details(rows, args):
             if e["status"] != "validated":
                 note = "%s: %s" % (role, short_reason(e["status"], e.get("reason", "")))
                 break
+        # A validated row can still need a qualifier. Pluto tiles `durbin` and `ludcmp`
+        # correctly but finds no parallelism in either -- both are inherently sequential
+        # recurrences -- so their speedups are one-thread numbers standing beside 72-thread
+        # ones, and the table has to say so where the number is read.
+        if not note and p.get("sequential"):
+            note = ("Pluto: correct and tiled, but polycc marked no loop parallel -- this is a "
+                    "SINGLE-THREADED result. The kernel is an inherently sequential recurrence and "
+                    "both polycc frontends agree there is no parallelism to find, so the speedup "
+                    "is not comparable to the 72-thread rows above.")
         if note:
             # Centred on the row and adaptive: a truncated explanation is worse than a dense
             # one, since the whole point of this page is that the reason is complete.
-            wrapped = textwrap.wrap(note, width=100)[:4]
+            wrapped = textwrap.wrap(note, width=100)
+            if len(wrapped) > _NOTE_LINES:
+                # Silent truncation is the one failure this page cannot afford: it turns a complete
+                # explanation into a sentence that stops mid-clause. Fail loudly instead, so the
+                # text gets shortened rather than quietly cut.
+                raise SystemExit(
+                    "plot_thesis: the note for %r needs %d lines but only %d fit between rows.\n"
+                    "Shorten it in short_reason() (budget is about %d characters).\n  %s"
+                    % (r["kernel"], len(wrapped), _NOTE_LINES, _NOTE_LINES * 100, note))
             start = -0.26 * (len(wrapped) - 1) / 2.0
             for li, line in enumerate(wrapped):
                 ax.text(xs[5], y + start + li * 0.26, line, fontsize=6.6, va="center",
@@ -404,7 +442,8 @@ def main():
     rows, groups, stamps = build_rows(args)
     if not args.subcaption:
         dace = sorted({v.split("+", 1)[1] for v in stamps if v and "+" in v})
-        args.subcaption = ("DaCe column: %s%s   |   Pluto: polycc --pet --tile --parallel, clang -O3 -march=native"
+        args.subcaption = ("DaCe column: %s%s   |   Pluto: polycc --tile --parallel --codegen-context=1, "
+                           "clang -O3 -march=native"
                            % (args.dace_framework, (" / " + ", ".join(dace)) if dace else ""))
 
     cmap = diverging()

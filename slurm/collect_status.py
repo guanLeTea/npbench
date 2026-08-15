@@ -28,6 +28,9 @@ _DECLINE = re.compile(r"PlutoUnavailable:\s*(.+)")
 #: NPBench's own wording when an implementation could not be loaded or executed.
 _FAILED = re.compile(r"^Failed to (?:load|execute) the (.+?) implementation\.", re.M)
 _TIMEOUT = re.compile(r"timed out", re.I)
+#: Pluto transformed and validated, but marked no loop parallel: a correct, tiled,
+#: SINGLE-THREADED row sitting beside 72-thread ones, so it has to be labelled.
+_SEQUENTIAL = re.compile(r"PlutoSequential:\s*(.+)")
 
 
 #: Signals worth naming when a pair's process was killed rather than exiting.
@@ -63,6 +66,19 @@ def classify_log(path: pathlib.Path, rc=None):
         tail = [l for l in text.strip().splitlines() if l.strip()][-1:]
         return "error", (tail[0] if tail else "traceback")[:400]
     return "error", "no result row and no recognised failure in the log"
+
+
+def sequential_note(path: pathlib.Path) -> str:
+    """The framework's own ``PlutoSequential`` line for this pair, or ``""``.
+
+    Read even when the pair VALIDATED, unlike everything else here: it is not a failure, it is a
+    qualifier on a good measurement. Pluto tiled the kernel but found no parallelism, so the
+    number is single-threaded and must not be read as a 72-thread speedup.
+    """
+    if not path.is_file():
+        return ""
+    m = _SEQUENTIAL.search(path.read_text(errors="replace"))
+    return " ".join(m.group(1).split())[:300] if m else ""
 
 
 def short_name(repo: pathlib.Path, kernel: str) -> str:
@@ -151,7 +167,9 @@ def main():
                     rc = rcs.get((k, fw))
                 st, reason = classify_log(logs / ("%s.%s.log" % (k, fw)), rc)
             variants = sorted({d for d, _, _ in got if d})
-            status[k][fw] = {"status": st, "reason": reason, "variants": variants}
+            note = sequential_note(logs / ("%s.%s.log" % (k, fw)))
+            status[k][fw] = {"status": st, "reason": reason, "variants": variants,
+                             "sequential": bool(note), "note": note}
             counts.setdefault(fw, {}).setdefault(st, []).append(k)
 
     with open(args.json, "w") as fh:
@@ -171,6 +189,14 @@ def main():
                      (fw, len(c.get("validated", [])), len(c.get("invalid", [])), len(c.get("declined", [])),
                       len(c.get("error", [])), len(c.get("missing", []))))
     lines.append("")
+    seq = [(k, fw) for k, per in sorted(status.items()) for fw, v in per.items()
+           if v.get("sequential")]
+    if seq:
+        lines.append("VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):")
+        for k, fw in seq:
+            lines.append("  %-16s %s" % (k, fw))
+        lines.append("")
+
     problems = [(k, fw, v) for k, per in sorted(status.items()) for fw, v in per.items()
                 if v["status"] != "validated"]
     if problems:
