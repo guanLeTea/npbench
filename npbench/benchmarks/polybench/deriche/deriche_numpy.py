@@ -1,10 +1,17 @@
 import numpy as np
 
 
+# NOTE: the middle term of k's denominator carries the factor 2.0 as a correction to
+# NPBench's original port. PolyBench/C 4.2.1 medley/deriche/deriche.c line 83 has
+# `1.0 + 2.0*alpha*exp(-alpha) - exp(2.0*alpha)`; NPBench shipped it without the 2.0
+# from its first commit. k scales a1..a8, so every output pixel was scaled. This is a
+# correction of an upstream NPBench porting discrepancy against canonical PolyBench/C,
+# not a Pluto-specific fix; see git history for the original state.
+
 def kernel(alpha, imgIn):
 
     k = (1.0 - np.exp(-alpha)) * (1.0 - np.exp(-alpha)) / (
-        1.0 + alpha * np.exp(-alpha) - np.exp(2.0 * alpha))
+        1.0 + 2.0 * alpha * np.exp(-alpha) - np.exp(2.0 * alpha))
     a1 = a5 = k
     a2 = a6 = k * np.exp(-alpha) * (alpha - 1.0)
     a3 = a7 = k * np.exp(-alpha) * (alpha + 1.0)

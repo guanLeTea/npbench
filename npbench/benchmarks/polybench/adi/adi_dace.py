@@ -6,6 +6,13 @@ import dace as dc
 N = dc.symbol('N', dtype=dc.int64)
 
 
+# NOTE: `b` is taken from mul1, not mul2, as a correction to NPBench's original port.
+# PolyBench/C 4.2.1 stencils/adi/adi.c builds two symmetric coefficient triples,
+# (a, b, c) from mul1 and (d, e, f) from mul2: `b = SCALAR_VAL(1.0)+mul1;`. NPBench
+# shipped `b = 1.0 + mul2` from its first commit, which breaks that symmetry while
+# leaving `e = 1.0 + mul2`, so the two solve different tridiagonal systems. This is a
+# correction of an upstream NPBench porting discrepancy against canonical PolyBench/C,
+# not a Pluto-specific fix; see git history for the original state.
 @dc.program
 def kernel(TSTEPS: dc.int64, u: dc.float64[N, N]):
 
@@ -22,7 +29,7 @@ def kernel(TSTEPS: dc.int64, u: dc.float64[N, N]):
     mul2 = B2 * DT / (DY * DY)
 
     a = -mul1 / 2.0
-    b = 1.0 + mul2
+    b = 1.0 + mul1
     c = a
     d = -mul2 / 2.0
     e = 1.0 + mul2

@@ -24,7 +24,11 @@ import sqlite3
 
 #: The framework's own decline, and its reason. Raised as PlutoUnavailable, printed either bare or
 #: as the last line of a traceback.
-_DECLINE = re.compile(r"PlutoUnavailable:\s*(.+)")
+#: `.+` would stop at the first newline, which silently discards the most informative part of a
+#: MULTI-LINE decline: `polycc failed on adi_pluto_reference.c:` alone says nothing, while the
+#: next line -- `[Clan] Error: syntax error at line 33` -- is the actual cause. Captured to the
+#: end of the log and trimmed below.
+_DECLINE = re.compile(r"PlutoUnavailable:\s*(.+)", re.S)
 #: NPBench's own wording when an implementation could not be loaded or executed.
 _FAILED = re.compile(r"^Failed to (?:load|execute) the (.+?) implementation\.", re.M)
 _TIMEOUT = re.compile(r"timed out", re.I)
@@ -54,7 +58,10 @@ def classify_log(path: pathlib.Path, rc=None):
     text = path.read_text(errors="replace")
     m = _DECLINE.search(text)
     if m:
-        reason = " ".join(m.group(1).split())
+        # NPBench keeps printing after the traceback ("Failed to run ... validation."); the
+        # decline message is everything up to that, flattened onto one line.
+        body = m.group(1).split("\nFailed to ")[0]
+        reason = " ".join(body.split())
         return "declined", reason[:400]
     if _TIMEOUT.search(text):
         return "error", "timed out"

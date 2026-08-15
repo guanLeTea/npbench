@@ -29,6 +29,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from npbench.infrastructure.pluto_framework import POLYCC_ARGS
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.patches import Rectangle
 
@@ -93,6 +96,19 @@ def runtime_text(t):
     return "%.2f s" % t
 
 
+def caption_lines(subcaption):
+    """``subcaption`` as one line, or split at its separator when it is too long for the page.
+
+    Page 1 is 7 inches wide and centres this text, so an over-long line runs off BOTH margins --
+    it loses the start of the DaCe stamp and the end of the clang flags at once, which is how it
+    lost "-march=native" when the Clan frontend was named. Splitting on the "|" the caption
+    already uses keeps each half on its own line without inventing a break point.
+    """
+    if len(subcaption) <= 118 or "|" not in subcaption:
+        return [subcaption]
+    return [s.strip() for s in subcaption.split("|", 1)]
+
+
 def short_reason(status, reason):
     """Two-to-three sentences: what fails, at which stage, and the concrete evidence.
 
@@ -145,6 +161,13 @@ def short_reason(status, reason):
                 "binary segfaults on its first call, taking the benchmark process with it "
                 "(exit 139). Reproduces on unmodified PolyBench/C 4.2.1, so it is Pluto's "
                 "generated code, not our ABI adaptation.")
+
+    if "polycc failed" in r and "Clan" in r:
+        return ("SCoP extraction: Clan cannot parse the kernel -- PolyBench/C 4.2.1 writes adi's step sizes "
+                "as DX = 1.0/(DATA_TYPE)_PB_N and Clan rejects that cast. pet parses it but emits doubly- "
+                "negated subscripts; bypassing that guard gives relative error 82.8. Neither frontend yields "
+                "usable code, so adi is now purely a Pluto limit -- its semantics are canonical and NumPy and "
+                "DaCe both validate.")
 
     if "polycc failed" in r:
         return ("Pluto transformation: polycc aborts inside pluto_auto_transform on the assertion "
@@ -324,7 +347,9 @@ def page_overview(rows, groups, args, cmap, norm):
     fig.text(0.5, 0.963,
              "preset %s, REPEAT=%d -- VERIFICATION RUN (single sample per kernel), not a performance measurement"
              % (args.preset, args.repeat), ha="center", va="top", fontsize=7.6, color="#455055")
-    fig.text(0.5, 0.947, args.subcaption, ha="center", va="top", fontsize=7.0, color="#455055")
+    for _i, _line in enumerate(caption_lines(args.subcaption)):
+        fig.text(0.5, 0.947 - 0.0115 * _i, _line, ha="center", va="top",
+                 fontsize=7.0, color="#455055")
 
     # Colour bar: ticks are factors, not log units, so the axis reads in the same notation as the
     # cells.
@@ -419,7 +444,9 @@ def page_details(rows, args):
              "preset %s, REPEAT=%d verification run. Explains every blank cell on page 1; "
              "a speedup is shown only where the result validated." % (args.preset, args.repeat),
              ha="center", va="top", fontsize=7.6, color="#455055")
-    fig.text(0.5, 0.937, args.subcaption, ha="center", va="top", fontsize=7.0, color="#455055")
+    for _i, _line in enumerate(caption_lines(args.subcaption)):
+        fig.text(0.5, 0.937 - 0.0115 * _i, _line, ha="center", va="top",
+                 fontsize=7.0, color="#455055")
     return fig
 
 
@@ -454,6 +481,17 @@ def main():
     with PdfPages(args.output) as pdf:
         pdf.savefig(f1)
         pdf.savefig(f2)
+        # Carried in the document itself, not only in the printed caption: the toolchain is the
+        # first thing anyone re-running these numbers needs, and a caption does not survive being
+        # cropped into a thesis figure.
+        info = pdf.infodict()
+        info["Title"] = ("NPBench PolyBench-derived kernels at preset %s, REPEAT=%d: "
+                         "Pluto vs DaCe auto_optimize" % (args.preset, args.repeat))
+        info["Subject"] = args.subcaption
+        info["Keywords"] = ("NPBench; PolyBench/C 4.2.1; Pluto; polycc %s (Clan frontend); "
+                            "clang -O3 -march=native -fopenmp; DaCe auto_optimize; preset %s; "
+                            "repeat %d" % (" ".join(POLYCC_ARGS), args.preset, args.repeat))
+        info["Creator"] = "npbench/slurm/plot_thesis.py"
     if args.png_prefix:
         f1.savefig("%s-p1.png" % args.png_prefix, dpi=140)
         f2.savefig("%s-p2.png" % args.png_prefix, dpi=140)

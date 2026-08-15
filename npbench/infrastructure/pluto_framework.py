@@ -223,19 +223,12 @@ class Adapter(object):
 #: Recorded here rather than only in prose so that a future fix to Pluto cannot quietly turn one of
 #: these into a column that runs and reports plausible, wrong numbers.
 SEMANTIC_DIVERGENCE: Dict[str, str] = {
-    "adi": ("NPBench's port computes `b = 1.0 + mul2` where PolyBench/C computes `b = 1.0 + mul1` "
-            "(adi_numpy.py:21 vs adi_pluto_reference.c:42). PolyBench builds two symmetric triples, "
-            "(a, b, c) from mul1 and (d, e, f) from mul2; the port takes b from mul2, breaking that "
-            "symmetry while keeping e = 1.0 + mul2. With the shared initialization mul1 = 2*mul2, so "
-            "the two solve different tridiagonal systems -- 81 vs 161 at the S preset, not a "
-            "rounding difference."),
-    "deriche": ("NPBench's port computes the normalization `k` with a denominator of "
-                "`1.0 + alpha*exp(-alpha) - exp(2*alpha)` where PolyBench/C has "
-                "`1.0 + 2.0*alpha*exp(-alpha) - exp(2*alpha)` (deriche_numpy.py:6-7 vs "
-                "deriche_pluto_reference.c:28) -- the factor 2.0 is missing. k scales a1..a8, so "
-                "every output pixel is scaled: relative error 2.07 at the S preset. Measured on the "
-                "UNTRANSFORMED reference compiled directly, which reproduces the same 2.0653287 "
-                "exactly, so this is a property of the two kernels and not of anything Pluto did."),
+    # Empty as of the canonicalization of `adi` and `deriche`. Both entries described
+    # upstream NPBench PORTING discrepancies against PolyBench/C 4.2.1 -- adi took `b`
+    # from mul2 instead of mul1, deriche dropped the factor 2.0 from k's denominator --
+    # and both have been corrected in the ports themselves (NumPy and DaCe alike), so
+    # there is no longer a divergence for this column to refuse. The mechanism stays:
+    # it is what keeps a future port drift from quietly becoming a Pluto "result".
 }
 
 
@@ -332,6 +325,15 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     Adapter(outputs=[("x", np.float64, lambda a: (a["N"], ), _zeros(np.float64)),
                      ("y", np.float64, lambda a: (a["N"], ), _zeros(np.float64))],
             returns=["x", "y"]),
+    # b1/b2 are ABI padding: the scop computes B1 = 2.0 and B2 = 1.0 itself, inside the scop,
+    # and discards these two with `(void)`. Passed as those literals so the ABI reads as what
+    # the kernel computes, though no value can reach the result. `u` is updated in place and is
+    # already NPBench's `output_args`; v/p/q are scop-local scratch.
+    "adi":
+    Adapter(constants={
+        "b1": 2.0,
+        "b2": 1.0
+    }),
     # alpha is ABI padding: the scop hard-codes 0.125 and discards the parameter with
     # `(void)alpha;`. Passed as 0.0 because no value can affect the result.
     "heat_3d":
