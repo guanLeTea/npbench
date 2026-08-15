@@ -9,8 +9,7 @@
 #define _PB_M M
 #define _PB_N N
 
-void atax_fp64(int64_t M, int64_t N, const double A[restrict M][N], double *restrict out, const double *restrict x) {
-  DATA_TYPE tmp[M];
+void atax_fp64(int64_t M, int64_t N, const double A[restrict M][N], double *restrict out, const double *restrict x, double *restrict tmp) {
 
   int i, j;
 

@@ -12,9 +12,7 @@
 #define _PB_M M
 #define _PB_N N
 
-void correlation_fp64(int64_t M, int64_t N, double corr[restrict M][M], double data[restrict N][M], double float_n, double stddev_eps, double stddev_replacement) {
-  DATA_TYPE mean[M];
-  DATA_TYPE stddev[M];
+void correlation_fp64(int64_t M, int64_t N, double corr[restrict M][M], double data[restrict N][M], double float_n, double stddev_eps, double stddev_replacement, double *restrict mean, double *restrict stddev) {
 
   int i, j, k;
 

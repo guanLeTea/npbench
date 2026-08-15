@@ -50,7 +50,17 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 #:                     almost nothing Pluto is for.
 #: * ``--parallel`` -- also off by default. Without it polycc marks no loop parallel
 #:                     and emits no ``#pragma omp parallel for``.
-POLYCC_ARGS: Tuple[str, ...] = ("--pet", "--tile", "--parallel")
+#: * ``--codegen-context=1`` -- "parameters are at least as much as 1". Without it Pluto also
+#:                     generates the degenerate cases where a size parameter is zero or negative,
+#:                     and the guards separating them carry coefficients that OVERFLOW the loop
+#:                     counter type. Measured: ``bicg`` emits ``if (9223372036854775808*N >= -M+1)``
+#:                     (2^63, one past int64 max) and ``fdtd_2d`` a 29-digit literal; the first
+#:                     compiles with a warning, is undefined at run time, and skips the loop it
+#:                     guards, so the kernel returns its untouched input very fast. Both disappear
+#:                     with the context set. It is not a tuning knob: every NPBench preset passes
+#:                     positive sizes, and a PolyBench kernel is undefined for non-positive ones,
+#:                     so this states a fact about the call rather than assuming one away.
+POLYCC_ARGS: Tuple[str, ...] = ("--pet", "--tile", "--parallel", "--codegen-context=1")
 
 #: Compile flags for polycc's output. ``-fopenmp`` (clang's own libomp, shipped in the
 #: LLVM prefix) rather than ``-fopenmp=libgomp``: the pragma has to actually be honoured,
@@ -149,6 +159,15 @@ class Adapter(object):
         Each is ``(name, dtype, shape_fn, init_fn)``; ``init_fn`` builds the buffer in the same
         initial state the port's own allocation gives it, so any cell the scop happens not to
         write still compares equal instead of holding whatever ``np.empty`` found.
+
+        This is also where a kernel's SCRATCH arrays are allocated. PolyBench/C passes every
+        scratch array as a caller-allocated parameter (``kernel_atax(..., tmp)``,
+        ``kernel_correlation(..., mean, stddev)``), and that is not a stylistic choice here: pet
+        does not model a scratch array declared as a function LOCAL, and Pluto then emits a scop
+        with the statements writing it missing entirely -- measured on ``atax``, where pet reports
+        2 statements for a 4-statement scop. Declared as a parameter, all 4 appear. Scratch
+        buffers are listed in ``outputs`` but left out of ``returns``: the harness has to allocate
+        them, the port never sees them.
     ``returns``
         What the wrapped call returns, in the PORT'S return order.
 
@@ -191,7 +210,10 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     # y = A^T (A x). The port returns the result; the scop writes it through `out` (and zeroes
     # it itself). `tmp` is a scop-local VLA, not a parameter.
     "atax":
-    Adapter(outputs=[("out", np.float64, lambda a: (a["N"], ), _zeros(np.float64))], returns=["out"]),
+    Adapter(outputs=[("out", np.float64, lambda a: (a["N"], ), _zeros(np.float64)),
+                     # scratch: PolyBench's own kernel_atax takes tmp as a parameter
+                     ("tmp", np.float64, lambda a: (a["M"], ), _zeros(np.float64))],
+            returns=["out"]),
     # The port returns (r @ A, A @ p); the scop writes them as out0 (length M) and out1 (length N).
     "bicg":
     Adapter(outputs=[("out0", np.float64, lambda a: (a["M"], ), _zeros(np.float64)),
@@ -211,7 +233,11 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
             returns=["Q", "R"]),
     # imgIn is declared [W][H], so W and H come from its two extents; imgOut has the same shape.
     "deriche":
-    Adapter(outputs=[("imgOut", np.float64, lambda a: (a["W"], a["H"]), _zeros(np.float64))], returns=["imgOut"]),
+    Adapter(outputs=[("imgOut", np.float64, lambda a: (a["W"], a["H"]), _zeros(np.float64)),
+                     # scratch: parameters of PolyBench's kernel_deriche
+                     ("y1", np.float64, lambda a: (a["W"], a["H"]), _zeros(np.float64)),
+                     ("y2", np.float64, lambda a: (a["W"], a["H"]), _zeros(np.float64))],
+            returns=["imgOut"]),
     # The port inlines `stddev[stddev <= 0.1] = 1.0`; the scop takes the same rule as two
     # parameters. corr is allocated as np.eye(M) by the port -- matched exactly here, so the
     # diagonal agrees whichever side writes it.
@@ -220,8 +246,11 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
         "stddev_eps": 0.1,
         "stddev_replacement": 1.0
     },
-            outputs=[("corr", np.float64, lambda a: (a["M"], a["M"]), lambda shape, a: np.eye(shape[0],
-                                                                                              dtype=np.float64))],
+            outputs=[("corr", np.float64, lambda a: (a["M"], a["M"]),
+                      lambda shape, a: np.eye(shape[0], dtype=np.float64)),
+                     # scratch: parameters of PolyBench's kernel_correlation
+                     ("mean", np.float64, lambda a: (a["M"], ), _zeros(np.float64)),
+                     ("stddev", np.float64, lambda a: (a["M"], ), _zeros(np.float64))],
             returns=["corr"]),
     # The port's `match(b1, b2)` returns 1 when b1 + b2 == 3; the scop takes that pair as
     # parameters. An int32 kernel: seq and table are both int32 in the port and in the scop.
@@ -236,6 +265,16 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     # `(void)alpha;`. Passed as 0.0 because no value can affect the result.
     "heat_3d":
     Adapter(constants={"alpha": 0.0}),
+    # Same shape: the scop hard-codes PolyBench's 0.5/0.5/0.7 Courant factors -- the same
+    # literals the NumPy port uses -- and discards these three parameters with `(void)`.
+    # Passed as those literals rather than 0.0 so the ABI reads as what the kernel computes,
+    # though no value can reach the result.
+    "fdtd_2d":
+    Adapter(constants={
+        "ex_courant": 0.5,
+        "ey_courant": 0.5,
+        "hz_courant": 0.7
+    }),
 }
 
 #: Prototype of the tracked scop's exported symbol. ``_fp64`` names the SYMBOL, not the

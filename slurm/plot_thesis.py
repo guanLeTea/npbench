@@ -90,37 +90,53 @@ def runtime_text(t):
 
 
 def short_reason(status, reason):
-    """One informative line from a framework's full decline text.
+    """Two-to-three sentences: what fails, at which stage, and the concrete evidence.
 
-    The full messages are deliberately long -- they have to stand alone in a log. On a figure they
-    have to fit a cell, so each known cause is compressed to the clause that identifies it while
-    keeping WHAT went wrong: dropped statements keep the names, an overflow keeps the fact that the
-    loop is skipped, a divergence keeps the two expressions.
+    A bare label like "dropped statements" is not an explanation -- it names a symptom without
+    saying which component lost them or why. Each cause below states the stage (PET extraction /
+    Pluto transformation / generated C / run time / semantic incompatibility) and the measured
+    fact behind the attribution.
     """
     if not reason:
         return STATUS_SHORT.get(status, status)
     r = " ".join(reason.split())
+
     if "dropped the statements writing" in r:
         names = r.split("dropped the statements writing", 1)[1].split(" in ", 1)[0]
-        names = names.replace("`", "").strip()
-        if len(names) > 46:
-            names = names[:43].rsplit(",", 1)[0] + ", ..."
-        return "polycc dropped the statements writing %s -> read uninitialised" % names
+        names = [n.strip() for n in names.replace("`", "").split(",") if n.strip()]
+        shown = ", ".join(names[:4]) + (", ..." if len(names) > 4 else "")
+        return ("Pluto's statement list omits the statements writing the scop-local scalar "
+                "temporaries (%s). PET extracts them -- they appear in pet's own scop dump -- so "
+                "they are lost when Pluto consumes the pet scop, not during extraction. The "
+                "emitted C then reads those temporaries uninitialised and returns NaN." % shown)
+
     if "integer literals too large for int64" in r:
-        return "polycc loop-guard literal overflows int64 -> guard is UB, loop skipped"
+        return ("Generated C: Pluto emitted a loop guard whose coefficient exceeds int64, so the "
+                "guard is undefined at run time and silently skips its loop. Fixed for the "
+                "recovered kernels by --codegen-context=1; this kernel still trips it.")
+
     if "differ semantically" in r:
-        tail = r.split("differ semantically.", 1)[1]
-        tail = tail.split("(", 1)[0].strip()
-        return "port != PolyBench original: %s" % tail.rstrip(". ")
+        return ("Semantic incompatibility, not a Pluto failure: NPBench's port and PolyBench/C "
+                "4.2.1 compute different coefficients (port b = 1.0 + mul2 vs PolyBench "
+                "b = 1.0 + mul1; 81 vs 161 at these sizes), so they solve different tridiagonal "
+                "systems. No argument mapping can reconcile them, so the kernel is refused before "
+                "any transformation.")
+
     if "killed by signal" in r:
-        sig = "SIGSEGV" if "SIGSEGV" in r else "signal"
-        return "Pluto's transformed binary crashes at runtime (%s)" % sig
+        return ("Run time: polycc transforms and clang compiles cleanly, but the transformed "
+                "binary segfaults on its first call and takes the benchmark process with it "
+                "(exit 139). Reproduces on unmodified PolyBench/C 4.2.1, so it is Pluto's "
+                "generated code rather than our ABI adaptation.")
+
     if "polycc failed" in r:
-        return "polycc aborted on an internal assertion (pluto_auto_transform)"
+        return ("Pluto transformation: polycc aborts inside pluto_auto_transform on the assertion "
+                "hyp_search_mode == LAZY || num_sols_left == num_ind_sols_req - num_ind_sols_found. "
+                "It fails before any C is generated, and reproduces on unmodified PolyBench/C 4.2.1.")
+
     if "did not finish within" in r:
-        return "polycc did not terminate within its timeout"
+        return "Pluto transformation: polycc did not terminate within its timeout."
     if "marked no loop parallel" in r:
-        return "polycc marked no loop parallel"
+        return "Pluto marked no loop parallel, so the column would time a sequential build."
     return r
 
 
@@ -310,7 +326,7 @@ def page_overview(rows, groups, args, cmap, norm):
 
 def page_details(rows, args):
     n = len(rows)
-    fig_h = 1.35 + 0.30 * n
+    fig_h = 1.35 + 0.42 * n
     fig = plt.figure(figsize=(10.0, fig_h))
     ax = fig.add_axes([0.035, 0.03, 0.945, 0.885])
     ax.set_xlim(0, 1)
@@ -327,7 +343,7 @@ def page_details(rows, args):
     for i, r in enumerate(rows):
         y = i + 1.35
         if i % 2 == 1:
-            ax.add_patch(Rectangle((0, y - 0.45), 1, 0.9, facecolor="#f4f6f7", edgecolor="none", zorder=0))
+            ax.add_patch(Rectangle((0, y - 0.48), 1, 0.96, facecolor="#f4f6f7", edgecolor="none", zorder=0))
         p, d = r["pluto"], r["dace"]
         ax.text(xs[0], y, r["kernel"], fontsize=7.8, va="center", zorder=2)
         ax.text(xs[1], y, runtime_text(r["numpy"]), fontsize=7.8, va="center", zorder=2)
@@ -349,9 +365,9 @@ def page_details(rows, args):
                 note = "%s: %s" % (role, short_reason(e["status"], e.get("reason", "")))
                 break
         if note:
-            wrapped = textwrap.wrap(note, width=100)[:2]
+            wrapped = textwrap.wrap(note, width=104)[:3]
             for li, line in enumerate(wrapped):
-                ax.text(xs[5], y - 0.17 + li * 0.34, line, fontsize=6.9, va="center",
+                ax.text(xs[5], y - 0.26 + li * 0.26, line, fontsize=6.6, va="center",
                         color="#33393e", zorder=2)
         else:
             ax.text(xs[5], y, "both columns validated against the NumPy reference", fontsize=6.9,

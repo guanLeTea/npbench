@@ -12,10 +12,8 @@
 #define _PB_H H
 
 /* Original code provided by Gael Deest */
-void deriche_fp64(int64_t H, int64_t W, const double imgIn[restrict W][H], double imgOut[restrict W][H], double alpha) {
-    DATA_TYPE y1[W][H];
-    DATA_TYPE y2[W][H];
-
+void deriche_fp64(int64_t H, int64_t W, const double imgIn[restrict W][H], double imgOut[restrict W][H], double alpha, double y1[restrict W][H], double y2[restrict W][H]) {
+    
     int i,j;
     DATA_TYPE xm1, tm1, ym1, ym2;
     DATA_TYPE xp1, xp2;
