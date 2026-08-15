@@ -106,9 +106,9 @@ def short_reason(status, reason):
         names = [n.strip() for n in names.replace("`", "").split(",") if n.strip()]
         shown = ", ".join(names[:4]) + (", ..." if len(names) > 4 else "")
         return ("Pluto's statement list omits the statements writing the scop-local scalar "
-                "temporaries (%s). PET extracts them -- they appear in pet's own scop dump -- so "
-                "they are lost when Pluto consumes the pet scop, not during extraction. The "
-                "emitted C then reads those temporaries uninitialised and returns NaN." % shown)
+                "temporaries (%s). PET does extract them -- they appear in pet's own scop dump -- "
+                "so they are lost when Pluto consumes that scop, not during extraction. The "
+                "emitted C reads them uninitialised and returns NaN." % shown)
 
     if "integer literals too large for int64" in r:
         return ("Generated C: Pluto emitted a loop guard whose coefficient exceeds int64, so the "
@@ -116,17 +116,16 @@ def short_reason(status, reason):
                 "recovered kernels by --codegen-context=1; this kernel still trips it.")
 
     if "differ semantically" in r:
-        return ("Semantic incompatibility, not a Pluto failure: NPBench's port and PolyBench/C "
-                "4.2.1 compute different coefficients (port b = 1.0 + mul2 vs PolyBench "
-                "b = 1.0 + mul1; 81 vs 161 at these sizes), so they solve different tridiagonal "
-                "systems. No argument mapping can reconcile them, so the kernel is refused before "
-                "any transformation.")
+        return ("Semantic incompatibility, not a Pluto failure: the port computes b = 1.0 + mul2 "
+                "where PolyBench/C 4.2.1 computes b = 1.0 + mul1 (81 vs 161 at these sizes), so the "
+                "two solve different tridiagonal systems. No argument mapping can reconcile that, "
+                "so the kernel is refused before transformation.")
 
     if "killed by signal" in r:
         return ("Run time: polycc transforms and clang compiles cleanly, but the transformed "
-                "binary segfaults on its first call and takes the benchmark process with it "
+                "binary segfaults on its first call, taking the benchmark process with it "
                 "(exit 139). Reproduces on unmodified PolyBench/C 4.2.1, so it is Pluto's "
-                "generated code rather than our ABI adaptation.")
+                "generated code, not our ABI adaptation.")
 
     if "polycc failed" in r:
         return ("Pluto transformation: polycc aborts inside pluto_auto_transform on the assertion "
@@ -365,9 +364,12 @@ def page_details(rows, args):
                 note = "%s: %s" % (role, short_reason(e["status"], e.get("reason", "")))
                 break
         if note:
-            wrapped = textwrap.wrap(note, width=104)[:3]
+            # Centred on the row and adaptive: a truncated explanation is worse than a dense
+            # one, since the whole point of this page is that the reason is complete.
+            wrapped = textwrap.wrap(note, width=100)[:4]
+            start = -0.26 * (len(wrapped) - 1) / 2.0
             for li, line in enumerate(wrapped):
-                ax.text(xs[5], y - 0.26 + li * 0.26, line, fontsize=6.6, va="center",
+                ax.text(xs[5], y + start + li * 0.26, line, fontsize=6.6, va="center",
                         color="#33393e", zorder=2)
         else:
             ax.text(xs[5], y, "both columns validated against the NumPy reference", fontsize=6.9,
