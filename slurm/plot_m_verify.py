@@ -66,6 +66,24 @@ def runtime_label(t):
     return "%.2f ms" % (t * 1000) if t < 0.1 else "%.2f s" % t
 
 
+def dace_build(db):
+    """The DaCe build stamp recorded on the rows, e.g. ``extended@eb7b1352a``.
+
+    ``DaceFramework.version()`` writes ``<version>+<branch>@<commit>``, so the tree a column was
+    measured on is recoverable from the database itself rather than having to be asserted in a
+    caption that nothing checks.
+    """
+    try:
+        conn = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
+        vs = [v for (v, ) in conn.execute(
+            "select distinct version from results where framework = 'dace_cpu'")]
+        conn.close()
+    except Exception:
+        return None
+    stamps = sorted({v.split("+", 1)[1] for v in vs if v and "+" in v})
+    return ", ".join(stamps) if stamps else None
+
+
 def load(db, preset):
     """``{(kernel, framework): {variant: (median_time, validated)}}`` for one preset."""
     conn = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
@@ -82,13 +100,20 @@ def load(db, preset):
     return out
 
 
-def best_valid(variants):
-    """Fastest VALIDATED variant as ``(time, name)``; ``(None, None)`` when none validated.
+def best_valid(variants, pin=None):
+    """A VALIDATED variant as ``(time, name)``; ``(None, None)`` when none qualifies.
 
-    Selecting among validated rows only is what keeps an invalid-but-fast variant from
-    becoming the number a speedup is computed from.
+    With ``pin`` set, ONLY that variant is eligible -- a faster sibling is ignored rather than
+    substituted. That is the difference between asking "how fast is DaCe" and "how fast is THIS
+    DaCe pipeline", and the thesis comparison against Pluto is the second question: Pluto is one
+    fixed pipeline, so pitting it against the best of three DaCe transformations per kernel would
+    compare a single optimizer against a per-kernel search.
+
+    Without ``pin`` this is ``plot_results.py``'s rule -- fastest validated variant.
+    Selecting among validated rows only is what keeps an invalid-but-fast variant from becoming
+    the number a speedup is computed from.
     """
-    ok = [(t, name) for (name, valid), (t, _) in variants.items() if valid]
+    ok = [(t, name) for (name, valid), (t, _) in variants.items() if valid and (pin is None or name == pin)]
     return min(ok) if ok else (None, None)
 
 
@@ -101,6 +126,11 @@ def main():
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--kernels", help="file with one kernel name per line (defines the row order)")
     ap.add_argument("--title", default="NPBench PolyBench-derived kernels")
+    ap.add_argument("--dace-variant",
+                    help="pin the DaCe SDFG variant (e.g. auto_opt). Without it, the fastest "
+                         "validated variant is used, which compares Pluto against a per-kernel "
+                         "search rather than against one pipeline.")
+    ap.add_argument("--build", help="DaCe build label for the caption; read from the DB when omitted")
     args = ap.parse_args()
 
     data = load(args.db, args.preset)
@@ -130,10 +160,17 @@ def main():
         entry = {"kernel": k, "numpy": np_t}
         for fw in ("pluto", "dace_cpu"):
             variants = data.get((dk, fw), {})
-            t, variant = best_valid(variants)
+            pin = args.dace_variant if fw == "dace_cpu" else None
+            t, variant = best_valid(variants, pin)
             st = (status.get(k, {}) or {}).get(fw, {})
             if t is not None and np_t:
                 entry[fw] = {"status": "validated", "speedup": np_t / t, "time": t, "variant": variant}
+            elif variants and pin and not any(n == pin and v for (n, v) in variants):
+                # The kernel ran, but the PINNED variant is not among its validated results.
+                # Reported as its own state: substituting a sibling here would silently answer a
+                # different question than the one the pin asks.
+                entry[fw] = {"status": "invalid",
+                             "reason": "variant %r not validated for this kernel" % pin}
             elif variants:
                 entry[fw] = {"status": "invalid", "reason": st.get("reason", "ran but did not validate")}
             else:
@@ -143,21 +180,28 @@ def main():
                 }
         rows.append(entry)
 
-    sub = "preset %s, REPEAT=%d - VERIFICATION RUN, not a performance measurement" % (args.preset, args.repeat)
+    build = args.build or dace_build(args.db)
+    if args.dace_variant:
+        dace_label = "DaCe CPU %s%s" % (args.dace_variant, " / %s" % build if build else "")
+    else:
+        dace_label = "DaCe CPU (fastest validated variant per kernel)"
+
+    sub = ("preset %s, REPEAT=%d - VERIFICATION RUN, not a performance measurement\n"
+           "DaCe column = %s" % (args.preset, args.repeat, dace_label))
     with PdfPages(args.output) as pdf:
-        _bars(pdf, rows, args.title, sub)
+        _bars(pdf, rows, args.title, sub, dace_label)
         _table(pdf, rows, args.title, sub)
     print("wrote %s" % args.output)
 
 
-def _bars(pdf, rows, title, sub):
+def _bars(pdf, rows, title, sub, dace_label="DaCe CPU"):
     """Speedup vs NumPy, log axis, one kernel per row. Declines are annotated, not omitted."""
     n = len(rows)
-    fig, ax = plt.subplots(figsize=(11, max(6, 0.42 * n + 2.4)))
+    fig, ax = plt.subplots(figsize=(11, max(6, 0.42 * n + 2.6)))
     y = np.arange(n)
     h = 0.38
     for off, fw, colour, label in ((+h / 2, "pluto", "#1565c0", "Pluto (polycc --pet --tile --parallel)"),
-                                   (-h / 2, "dace_cpu", "#ef6c00", "DaCe CPU (best validated SDFG variant)")):
+                                   (-h / 2, "dace_cpu", "#ef6c00", dace_label)):
         vals, ypos = [], []
         for i, r in enumerate(rows):
             e = r[fw]

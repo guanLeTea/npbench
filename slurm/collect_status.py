@@ -91,6 +91,9 @@ def main():
     ap.add_argument("--summary", required=True)
     ap.add_argument("--joblog", help="slurm job log; exit codes are recovered from its "
                                      "`END <fw> <kernel> rc=<n>` lines when no .rc sidecar exists")
+    ap.add_argument("--dace-variant",
+                    help="count dace_cpu as validated only when THIS SDFG variant validated "
+                         "(e.g. auto_opt). Without it any validated variant counts.")
     args = ap.parse_args()
 
     logs = pathlib.Path(args.logs)
@@ -126,8 +129,14 @@ def main():
         db_name = short_name(repo, k)
         for fw in frameworks:
             got = by_pair.get((db_name, fw), [])
-            if any(v for _, v, _ in got):
+            pin = args.dace_variant if fw == "dace_cpu" else None
+            # With a pin, a sibling variant validating is NOT an answer to the question asked:
+            # the campaign is comparing one named pipeline, not the best of several.
+            hits = [(d, v, t) for d, v, t in got if pin is None or d == pin]
+            if any(v for _, v, _ in hits):
                 st, reason = "validated", ""
+            elif got and pin and not hits:
+                st, reason = "invalid", "variant %r not present for this kernel" % pin
             elif got:
                 st, reason = "invalid", "ran but did not validate against the NumPy reference"
             else:
@@ -150,6 +159,9 @@ def main():
 
     lines = []
     lines.append("preset %s -- %d kernels x %d frameworks" % (args.preset, len(kernels), len(frameworks)))
+    if args.dace_variant:
+        lines.append("dace_cpu pinned to the %r SDFG variant (siblings ignored, not substituted)"
+                     % args.dace_variant)
     lines.append("")
     lines.append("%-12s %9s %9s %9s %7s %8s" % ("framework", "validated", "invalid", "declined", "error", "missing"))
     lines.append("-" * 62)
