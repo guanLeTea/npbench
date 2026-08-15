@@ -21,7 +21,7 @@ and a positional ctypes call cannot detect a permuted argument list on its own.
 Pipeline per benchmark, cached on mtime under :func:`build_root`:
 
     <module>_pluto_reference.c            tracked PolyBench scop
-      -> polycc --pet --tile --parallel   POLYCC_ARGS
+      -> polycc --tile --parallel        POLYCC_ARGS (clan frontend)
       -> <module>_pluto.c                 transformed, same signature
       -> clang -O3 -march=native -fopenmp -shared
       -> lib<module>_pluto.so             exports <module>_fp64
@@ -44,8 +44,27 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 #: How ``polycc`` is invoked, and why each flag is there.
 #:
-#: * ``--pet``      -- the tracked scops use ``int64_t`` counters, which the default
-#:                     ``clan`` extractor rejects.
+#: * (no ``--pet``) -- polycc's DEFAULT frontend, ``clan``, is used deliberately. This column
+#:                     originally passed ``--pet`` on the belief that clan rejects the tracked
+#:                     scops' ``int64_t`` counters. Measured: it does not. clan extracts 22 of
+#:                     the 23 scops (only ``adi``, which is excluded on other grounds, fails),
+#:                     with the correct statement count on every one.
+#:
+#:                     ``--pet`` costs four kernels, through one Pluto defect and one of its
+#:                     downstream effects. pet emits a KILL statement for every variable declared
+#:                     inside the function; ``pet_to_pluto.cpp:mark_trivial_dead_code()`` then
+#:                     deletes every statement writing a killed NAME -- "a HACK to get rid of old
+#:                     IV init's and increments", in its own comment, and an unconditional name
+#:                     match rather than liveness analysis. So ``gramschmidt`` loses ``nrm``'s two
+#:                     writes (5 statements of 7) and reads it uninitialized; ``durbin`` loses 3
+#:                     of 10; and ``ludcmp`` loses its accumulator's writes, leaving a degenerate
+#:                     dependence graph on which Pluto aborts in ``pluto_auto_transform``. clan
+#:                     emits no kills and extracts all three intact (7, 10 and 12 statements).
+#:                     ``--pet`` additionally miscompiles ``nussinov``'s reversed ``i`` loop into
+#:                     ``table[-(N-2)][...]`` -- row -58 at N=60, ~14 KB before the buffer, which
+#:                     ASan reports as a SEGV at the generated line; clan emits no such index.
+#:
+#:                     Set ``NPBENCH_PLUTO_FRONTEND=pet`` to reproduce any of the above.
 #: * ``--tile``     -- off by default in polycc. An untiled Pluto column measures
 #:                     almost nothing Pluto is for.
 #: * ``--parallel`` -- also off by default. Without it polycc marks no loop parallel
@@ -60,7 +79,18 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 #:                     with the context set. It is not a tuning knob: every NPBench preset passes
 #:                     positive sizes, and a PolyBench kernel is undefined for non-positive ones,
 #:                     so this states a fact about the call rather than assuming one away.
-POLYCC_ARGS: Tuple[str, ...] = ("--pet", "--tile", "--parallel", "--codegen-context=1")
+POLYCC_ARGS: Tuple[str, ...] = ("--tile", "--parallel", "--codegen-context=1")
+
+#: Frontend override, for reproducing the pet-specific defects above: ``NPBENCH_PLUTO_FRONTEND=pet``.
+_FRONTEND = os.environ.get("NPBENCH_PLUTO_FRONTEND", "").strip().lower()
+if _FRONTEND == "pet":
+    POLYCC_ARGS = ("--pet", ) + POLYCC_ARGS
+
+#: Whether to lift scop-local scratch into parameters (:func:`lift_scop_locals`). It works around
+#: a pet-only defect, and under clan it would only cost parallelism -- a lifted scalar is a shared
+#: cell, which Pluto must then serialize on -- so it defaults ON for pet and OFF otherwise.
+_LIFT_LOCALS = os.environ.get("NPBENCH_PLUTO_LIFT", "1" if _FRONTEND == "pet" else "0").strip() \
+    not in ("0", "no", "false")
 
 #: Compile flags for polycc's output. ``-fopenmp`` (clang's own libomp, shipped in the
 #: LLVM prefix) rather than ``-fopenmp=libgomp``: the pragma has to actually be honoured,
@@ -194,9 +224,44 @@ class Adapter(object):
 #: these into a column that runs and reports plausible, wrong numbers.
 SEMANTIC_DIVERGENCE: Dict[str, str] = {
     "adi": ("NPBench's port computes `b = 1.0 + mul2` where PolyBench/C computes `b = 1.0 + mul1` "
-            "(adi.py vs adi_pluto_reference.c). With the shared initialization mul1 = 2*mul2, so "
+            "(adi_numpy.py:21 vs adi_pluto_reference.c:42). PolyBench builds two symmetric triples, "
+            "(a, b, c) from mul1 and (d, e, f) from mul2; the port takes b from mul2, breaking that "
+            "symmetry while keeping e = 1.0 + mul2. With the shared initialization mul1 = 2*mul2, so "
             "the two solve different tridiagonal systems -- 81 vs 161 at the S preset, not a "
             "rounding difference."),
+    "deriche": ("NPBench's port computes the normalization `k` with a denominator of "
+                "`1.0 + alpha*exp(-alpha) - exp(2*alpha)` where PolyBench/C has "
+                "`1.0 + 2.0*alpha*exp(-alpha) - exp(2*alpha)` (deriche_numpy.py:6-7 vs "
+                "deriche_pluto_reference.c:28) -- the factor 2.0 is missing. k scales a1..a8, so "
+                "every output pixel is scaled: relative error 2.07 at the S preset. Measured on the "
+                "UNTRANSFORMED reference compiled directly, which reproduces the same 2.0653287 "
+                "exactly, so this is a property of the two kernels and not of anything Pluto did."),
+}
+
+
+#: Benchmarks where polycc's output is CORRECT SEQUENTIALLY but its OpenMP parallelization is
+#: unsound -- Pluto marked a loop parallel that carries a dependence.
+#:
+#: This is the most dangerous failure mode in this module, and the only one that can pass
+#: validation. A dropped statement returns NaN, an overflowing bound skips a loop, a negated
+#: subscript segfaults; all of those are reliably visible. A race is not: it corrupts a
+#: data-dependent fraction of the output, so at a small preset the kernel sometimes lands on the
+#: right answer and NPBench prints SUCCESS. Observed exactly that -- two consecutive
+#: `run_benchmark.py -b nussinov -f pluto -p S` invocations, unchanged binary, one SUCCESS and one
+#: "Relative error: 0.0048".
+#:
+#: Refused up front rather than left to validation, because validation cannot be trusted to catch
+#: it and a single lucky run would put a wrong number in the results database under Pluto's name.
+#:
+#: Every other tracked kernel was screened for this and is deterministic: each was run once
+#: sequentially and three times on 32 threads, and the outputs compared exactly.
+UNSOUND_PARALLELIZATION: Dict[str, str] = {
+    "nussinov": ("polycc marks the tiled `i` loop `#pragma omp parallel for`, but nussinov's "
+                 "`table[i][j] = max(table[i][j], table[i][k] + table[k+1][j])` reads row k+1 while "
+                 "another thread is still writing it. Measured against the untransformed reference "
+                 "compiled directly, N=200: 0/20 runs differ on 1 thread, 20/20 differ on 8 threads "
+                 "and 20/20 on 32. The sequential result is exact, so the transformation itself is "
+                 "sound and only the parallel decoration is wrong."),
 }
 
 
@@ -261,6 +326,12 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     },
             outputs=[("table", np.int32, lambda a: (a["N"], a["N"]), _zeros(np.int32))],
             returns=["table"]),
+    # The port allocates x and y as zeros_like(b) and returns both; A it modifies in place,
+    # which is already NPBench's `output_args`. The scop writes x and y through pointers.
+    "ludcmp":
+    Adapter(outputs=[("x", np.float64, lambda a: (a["N"], ), _zeros(np.float64)),
+                     ("y", np.float64, lambda a: (a["N"], ), _zeros(np.float64))],
+            returns=["x", "y"]),
     # alpha is ABI padding: the scop hard-codes 0.125 and discards the parameter with
     # `(void)alpha;`. Passed as 0.0 because no value can affect the result.
     "heat_3d":
@@ -404,6 +475,179 @@ CLANG_TIMEOUT = 300
 _INT64_MAX = (1 << 63) - 1
 
 
+#: A scratch declaration eligible for lifting: one uninitialized data-typed local, on its own
+#: line, between the prototype and `#pragma scop`. Integer declarations are deliberately NOT
+#: matched -- `int i, j, k;` are the loop counters, and eliminating the statements that write
+#: THOSE is the behaviour the pass below exists for and gets right.
+_LOCAL_DECL = re.compile(r"^([ \t]*)(DATA_TYPE|double|float)[ \t]+([^;=]+);[ \t]*\n", re.M)
+
+
+def _resolve_data_type(text: str) -> str:
+    """What ``DATA_TYPE`` expands to in ``text``; PolyBench fixes it per kernel."""
+    m = re.search(r"^\s*#\s*define\s+DATA_TYPE\s+(\w+)\s*$", text, re.M)
+    return m.group(1) if m else "double"
+
+
+def _writes_name(region: str, name: str) -> bool:
+    """Whether ``region`` assigns to ``name`` anywhere, at any nesting.
+
+    Deliberately NOT :func:`_assigned_names`, which anchors to the start of a line so that a
+    ``for (i = 0; ...)`` header is not read as an assignment. That anchoring is right for
+    comparing write sets, and wrong for deciding what to lift: ``deriche`` chains its
+    coefficients (``a1 = a5 = k;``, ``c1 = c2 = 1;``), and an anchored scan sees only the
+    leftmost target -- which would lift ``a1`` and leave ``a5`` behind in the same statement.
+    """
+    return re.search(r"\b{n}\b\s*(?:\[[^\]]*\]\s*)*(?:[-+*/]?=(?!=)|\+\+|--)".format(n=re.escape(name)),
+                     region) is not None
+
+
+def lift_scop_locals(text: str) -> Tuple[str, Dict[str, List[str]]]:
+    """Rewrite scop-local scratch temporaries into caller-allocated scratch PARAMETERS.
+
+    Returns the rewritten translation unit and ``{name: extents}`` for each variable lifted
+    (``[]`` for a scalar, which becomes a one-element pointer). Returns the input unchanged
+    when nothing qualifies, which is the case for 17 of the 23 tracked scops.
+
+    WHY THIS EXISTS -- the defect it works around, named exactly:
+
+        pluto/tool/pet_to_pluto.cpp, ``mark_trivial_dead_code()``
+
+    pet emits a *kill* statement for every variable declared inside the function. Pluto reads
+    those kills and then, in its own words,
+
+        // Mark any other writes to the same variable name dead.
+        // This is a HACK to get rid of old IV init's and increments.
+
+    deletes every statement writing a killed NAME. That is not liveness analysis: it is an
+    unconditional name match, written to drop induction-variable bookkeeping, and it takes out
+    genuine computation with it. A twelve-line kernel whose local accumulator is stored to an
+    output array immediately afterwards -- unambiguously live -- still loses both of its writes.
+
+    Consequences measured here, all of which this pass removes:
+
+      * ``gramschmidt`` loses ``nrm = 0.0`` and ``nrm += ...``; the emitted code takes
+        ``sqrt()`` of an uninitialized scalar (5 statements out of 7).
+      * ``durbin`` loses 3 of 10 statements the same way.
+      * ``ludcmp`` does not merely lose statements -- with its accumulator's writes deleted the
+        remaining dependence graph is degenerate and Pluto aborts inside ``pluto_auto_transform``
+        on ``hyp_search_mode == LAZY || num_sols_left == ...``. Lifting ``w`` makes it transform.
+
+    A function PARAMETER has no declaration inside the function, so pet emits no kill for it and
+    nothing is deleted. That is the whole mechanism; it is the same shape PolyBench/C already
+    uses for its own scratch (``kernel_atax(..., tmp)``).
+
+    WHY IT IS SEMANTICS-PRESERVING. A lifted scalar becomes a one-element array cell, so every
+    read and write keeps its address, its order and its dependences -- Pluto sees exactly the
+    dependences the C scalar already had, and may schedule less aggressively but never more.
+    Three conditions keep the rewrite honest, and a declaration failing any of them is left
+    alone rather than guessed at:
+
+      1. no initializer -- ``DATA_TYPE eps = stddev_eps;`` carries a value INTO the scop that a
+         freshly allocated buffer would not have;
+      2. not assigned between the declaration and ``#pragma scop``, for the same reason;
+      3. assigned at least once INSIDE the scop -- a variable the scop only reads loses nothing
+         to the hack, because the hack only deletes writes.
+
+    Under (1) and (2) the C original reads an indeterminate value on any path that reads before
+    writing, so zero-filling the scratch buffer is a valid realization of what the original
+    already did. Every lifted kernel is still validated against the NumPy reference; this pass
+    can only produce a build that fails to compile or fails to validate, never a wrong number
+    that passes.
+    """
+    m = _PROTO.search(text)
+    if not m:
+        return text, {}
+    elem = _resolve_data_type(text)
+    head, body = text[:m.end()], text[m.end():]
+
+    scop = _scop_region(text)
+
+    split = body.find("#pragma scop")
+    if split < 0:
+        return text, {}
+    pre, rest = body[:split], body[split:]
+
+    lifted: Dict[str, List[str]] = {}
+    new_pre, cursor = [], 0
+    for decl in _LOCAL_DECL.finditer(pre):
+        indent, _type, declarators = decl.group(1), decl.group(2), decl.group(3)
+        keep, take = [], []
+        for d in (d.strip() for d in declarators.split(",")):
+            name = d.split("[")[0].strip()
+            extents = [e.strip() for e in re.findall(r"\[([^\]]*)\]", d)]
+            if _writes_name(scop, name) and not _writes_name(pre, name):
+                take.append((name, extents))
+            else:
+                keep.append(d)
+        if not take:
+            continue
+        new_pre.append(pre[cursor:decl.start()])
+        if keep:
+            new_pre.append("{i}{t} {d};\n".format(i=indent, t=decl.group(2), d=", ".join(keep)))
+        cursor = decl.end()
+        for name, extents in take:
+            lifted[name] = extents
+    if not lifted:
+        return text, {}
+    new_pre.append(pre[cursor:])
+    body = "".join(new_pre) + rest
+
+    # Scalars become `name[0]`. Done on the BODY only, before the signature is rebuilt, so the
+    # rewrite cannot reach the parameter declarations it is about to create.
+    for name, extents in lifted.items():
+        if extents:
+            continue
+        body = re.sub(r"\b{n}\b".format(n=re.escape(name)), "{n}[0]".format(n=name), body)
+
+    params = []
+    for name, extents in lifted.items():
+        if extents:
+            dims = "[restrict {e}]".format(e=extents[0]) + "".join("[{e}]".format(e=e) for e in extents[1:])
+            params.append("{t} {n}{d}".format(t=elem, n=name, d=dims))
+        else:
+            params.append("{t} *restrict {n}".format(t=elem, n=name))
+    head = head.rstrip()
+    assert head.endswith("{")
+    head = head[:-1].rstrip().rstrip(")")
+    head = "{h}, {p}) {{".format(h=head, p=", ".join(params))
+    return head + body, lifted
+
+
+#: An array subscript opening with a unary minus applied to a parenthesized expression or to
+#: another minus. See :func:`_negated_subscripts` for why that is the defect's signature and why
+#: the legitimate case (``b[-t4]``, a bare reversed iterator) is deliberately not matched.
+_NEG_SUBSCRIPT = re.compile(r"\[\s*-\s*[-(]")
+
+
+def _negated_subscripts(text: str) -> List[str]:
+    """Array subscripts polycc emitted with one negation too many.
+
+    A THIRD Pluto defect, specific to the ``--pet`` frontend, and the one that crashes rather
+    than lying. Pluto captures each statement's source text from an isl AST in which a reverse
+    loop has ALREADY been normalized -- ``for (i = N-1; i >= 0; i--)`` becomes ``c0`` with
+    ``i = -c0``, so the captured text reads ``table[-c0][...]``. Pluto then runs its own
+    scheduling and CLooG codegen, which normalizes the same loop again, and substitutes its
+    iterator into that text without folding the sign. The two reversals compose instead of
+    cancelling:
+
+        nussinov   table[-(N-2)][(N-1)]      should be table[N-2][N-1]
+        deriche    y2[t2][- -t4]             should be y2[t2][-t4]
+        ludcmp     x[-(N-1)]                 should be x[N-1]
+
+    ``-(N-2)`` is negative for every N > 2, so the kernel reads and writes whole rows BELOW its
+    array. Measured with AddressSanitizer: nussinov faults on a read at an address below the
+    allocation; deriche writes 376 bytes before ``y2`` and corrupts the heap, which under NPBench
+    kills the interpreter mid-benchmark.
+
+    What is matched is a subscript whose leading unary minus applies to a parenthesized
+    expression or to a second minus. A correct reversed iterator prints as ``b[-t4]`` -- minus
+    directly on a bare iterator name -- and is NOT matched, which is what keeps the 17 working
+    kernels working. Detected on the generated source and turned into a decline; never repaired
+    there, because folding the sign by hand would mean timing code polycc did not produce.
+    """
+    return sorted({m.group(0) for m in _NEG_SUBSCRIPT.finditer(text)})
+
+
 def _int64_overflow_literals(text: str) -> List[str]:
     """Integer literals in ``text`` too large for a 64-bit signed type.
 
@@ -506,9 +750,18 @@ def run_polycc(reference: pathlib.Path, out: pathlib.Path) -> None:
             raise PlutoUnavailable("polycc failed on {r}:\n{t}".format(r=reference.name, t="\n".join(tail)))
         text = tmp_out.read_text()
         if "#pragma omp parallel for" not in text:
-            # polycc ran but marked nothing parallel. Timing that would report a
-            # sequential build under Pluto's name.
-            raise PlutoUnavailable("polycc marked no loop parallel in {r}".format(r=reference.name))
+            # polycc ran but marked nothing parallel. NOT a decline: Pluto is a locality
+            # optimizer as well as a parallelizer, the output is still tiled, and on `durbin`
+            # and `ludcmp` -- the only two kernels here that reach this -- there genuinely is no
+            # parallelism to find. Both are inherently sequential recurrences, and clan and pet
+            # agree on it, so a blank row would misreport an honest Pluto answer as a failure.
+            #
+            # It is announced rather than swallowed, because a one-thread result sitting in a
+            # table beside 72-thread ones has to be labelled as such. The launcher captures this
+            # line per pair, `collect_status.py` picks it up, and the report marks the row.
+            print("PlutoSequential: {r}: polycc marked no loop parallel; the transformed code is "
+                  "tiled but single-threaded, so this row is not comparable to the parallel "
+                  "ones".format(r=reference.name))
         dropped = _dropped_writes(reference.read_text(), text)
         if dropped:
             raise PlutoUnavailable(
@@ -522,6 +775,13 @@ def run_polycc(reference: pathlib.Path, out: pathlib.Path) -> None:
                 "(e.g. {lit}); the guard they sit in is undefined at runtime, which silently "
                 "skips the loop rather than computing a wrong number loudly".format(r=reference.name,
                                                                                     lit=overflow[0]))
+        negated = _negated_subscripts(text)
+        if negated:
+            raise PlutoUnavailable(
+                "polycc emitted array subscripts with one negation too many in {r} (e.g. `{s}`); "
+                "the index is negative for every valid size, so the kernel reads and writes below "
+                "its own arrays -- a segfault or silent heap corruption, not a wrong "
+                "number".format(r=reference.name, s=negated[0]))
         os.replace(str(tmp_out), str(out))
 
 
@@ -581,19 +841,39 @@ class PlutoFramework(Framework):
             raise PlutoUnavailable("{b}: port and PolyBench original differ semantically. {d}".format(
                 b=bench.bname, d=divergence))
 
+        racy = UNSOUND_PARALLELIZATION.get(bench.bname)
+        if racy:
+            raise PlutoUnavailable(
+                "{b}: polycc's parallelization is unsound, so a timing here would be a race. "
+                "{d}".format(b=bench.bname, d=racy))
+
         reference = reference_source(bench)
         if not reference.is_file():
             raise PlutoUnavailable("no tracked PolyBench scop for {b} (expected {p})".format(
                 b=bench.bname, p=reference.name))
 
-        base, params = parse_prototype(reference.read_text())
+        # Scratch temporaries out of the function body and into the signature, so Pluto's
+        # name-matched dead-code hack has no kill statement to act on. A no-op for the 17 scops
+        # that declare no data-typed local; see `lift_scop_locals` for the defect and the proof
+        # that the rewrite preserves semantics.
+        source_text, lifted = (lift_scop_locals(reference.read_text()) if _LIFT_LOCALS else
+                               (reference.read_text(), {}))
+        base, params = parse_prototype(source_text)
         root = build_root() / bench.bname
         root.mkdir(parents=True, exist_ok=True)
         transformed = root / "{b}_pluto.c".format(b=base)
         so = root / "lib{b}_pluto.so".format(b=base)
 
-        if _stale(transformed, reference):
-            run_polycc(reference, transformed)
+        # The lifted unit is written out rather than piped: it is what polycc actually consumed,
+        # so it has to be on disk beside the transform for any of this to be reviewable.
+        source = reference
+        if lifted:
+            source = root / "{b}_lifted.c".format(b=base)
+            if not source.is_file() or source.read_text() != source_text:
+                source.write_text(source_text)
+
+        if _stale(transformed, source):
+            run_polycc(source, transformed)
         if _stale(so, transformed):
             compile_shared(transformed, so)
 
@@ -666,6 +946,19 @@ class PlutoFramework(Framework):
                     raise PlutoUnavailable("{b}: cannot size output `{n}`, missing symbol {k}".format(
                         b=bench.bname, n=name, k=e))
                 named[name] = init_fn(shape, named)
+
+            # Scratch buffers for the lifted temporaries. Zero-filled: under the lifting
+            # conditions the C original read an indeterminate value on any read-before-write
+            # path, so zero is a valid realization of it and a deterministic one.
+            for name, kind, extents, (np_t, _c_t) in params:
+                if name not in lifted or name in named:
+                    continue
+                try:
+                    shape = tuple(int(named[e]) for e in extents) if extents else (1, )
+                except KeyError as e:
+                    raise PlutoUnavailable("{b}: cannot size lifted scratch `{n}`, missing symbol {k}".format(
+                        b=bench.bname, n=name, k=e))
+                named[name] = np.zeros(shape, dtype=np_t)
 
             for name, fnc in overrides.items():
                 named[name] = fnc(named)
