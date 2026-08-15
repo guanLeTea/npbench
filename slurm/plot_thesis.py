@@ -163,11 +163,10 @@ def short_reason(status, reason):
                 "generated code, not our ABI adaptation.")
 
     if "polycc failed" in r and "Clan" in r:
-        return ("SCoP extraction: Clan cannot parse the kernel -- PolyBench/C 4.2.1 writes adi's step sizes "
-                "as DX = 1.0/(DATA_TYPE)_PB_N and Clan rejects that cast. pet parses it but emits doubly- "
-                "negated subscripts; bypassing that guard gives relative error 82.8. Neither frontend yields "
-                "usable code, so adi is now purely a Pluto limit -- its semantics are canonical and NumPy and "
-                "DaCe both validate.")
+        return ("Pluto transformation. Clan rejects adi's canonical cast 1.0/(DATA_TYPE)_PB_N, but expanding "
+                "PolyBench's macros first (bit-identical to canonical) gets all 27 statements extracted -- "
+                "and polycc then miscompiles it: 1514 of 1600 values wrong at N=40, identically under every "
+                "tiling, fusion and parallelization setting. Deterministic, not a race.")
 
     if "polycc failed" in r:
         return ("Pluto transformation: polycc aborts inside pluto_auto_transform on the assertion "

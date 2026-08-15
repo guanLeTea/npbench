@@ -325,6 +325,27 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     Adapter(outputs=[("x", np.float64, lambda a: (a["N"], ), _zeros(np.float64)),
                      ("y", np.float64, lambda a: (a["N"], ), _zeros(np.float64))],
             returns=["x", "y"]),
+    # adi is DECLINED, and not for any reason this adapter can reach -- polycc miscompiles it.
+    # Investigated to exhaustion, because its semantics are canonical now and both other columns
+    # validate, so it was the last plausible recovery:
+    #
+    #   * Clan cannot parse PolyBench's own `DX = 1.0/(DATA_TYPE)_PB_N` -- Clan does not run the
+    #     C preprocessor, so `DATA_TYPE` is an unknown identifier and `(DATA_TYPE)` is not a cast.
+    #   * Expanding the kernel's OWN macros first (leaving `#include`s for the compiler) fixes
+    #     that: Clan then extracts all 27 statements. The expansion is semantics-neutral --
+    #     bit-identical to the canonical source at -O0/-O1/-O2/-O3 over 3600 values.
+    #   * But polycc's OUTPUT is then wrong: 1514 of 1600 values differ from the untransformed
+    #     canonical at N=40, T=5. Identical error under --tile/--parallel/--nofuse/--maxfuse/
+    #     --lastwriter/--nointratileopt/--nodiamond-tile AND under plain polycc with no tiling
+    #     and no parallelization; identical again after lifting v/p/q and the scalars to
+    #     parameters (which is itself bit-identical untransformed). Same result on 1, 8 and 32
+    #     threads, so it is a wrong schedule, not a race.
+    #   * The pet frontend parses the cast but emits doubly-negated subscripts; bypassing that
+    #     guard gives relative error 82.8.
+    #
+    # So the preprocessing step is deliberately NOT integrated: it would change the source fed to
+    # Clan for all 23 kernels and buy nothing, since adi stays wrong on the far side of it.
+    #
     # b1/b2 are ABI padding: the scop computes B1 = 2.0 and B2 = 1.0 itself, inside the scop,
     # and discards these two with `(void)`. Passed as those literals so the ABI reads as what
     # the kernel computes, though no value can reach the result. `u` is updated in place and is
