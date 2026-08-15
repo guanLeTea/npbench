@@ -133,9 +133,17 @@ for key in "${mine[@]}"; do
         echo "[rank ${rank}] BEGIN ${fw} ${key} $(date +%T)"
         # Full per-pair log: this is where a Pluto decline reason is preserved. Nothing is
         # retried or forced -- a decline is the result.
-        python "${REPO}/run_benchmark.py" -b "${key}" -f "${fw}" -p "${PRESET}" \
+        #
+        # `python -u`: a Pluto-transformed kernel can SEGFAULT the interpreter (measured on
+        # nussinov, rc=139). Block-buffered stdout is lost when a process dies by signal, so
+        # without -u the log of the one pair that most needs explaining arrives empty.
+        python -u "${REPO}/run_benchmark.py" -b "${key}" -f "${fw}" -p "${PRESET}" \
                -r "${REPEAT}" -t "${TIMEOUT}" -v True </dev/null > "${log}" 2>&1
-        echo "[rank ${rank}] END   ${fw} ${key} rc=$? $(date +%T)"
+        prc=$?
+        # The exit code beside the log: a signal death (128+N) is otherwise indistinguishable
+        # from a clean run that happened to print nothing.
+        echo "${prc}" > "${log%.log}.rc"
+        echo "[rank ${rank}] END   ${fw} ${key} rc=${prc} $(date +%T)"
     done
 done
 '

@@ -30,8 +30,22 @@ _FAILED = re.compile(r"^Failed to (?:load|execute) the (.+?) implementation\.", 
 _TIMEOUT = re.compile(r"timed out", re.I)
 
 
-def classify_log(path: pathlib.Path):
-    """``(status, reason)`` from one per-pair log."""
+#: Signals worth naming when a pair's process was killed rather than exiting.
+_SIGNALS = {4: "SIGILL", 6: "SIGABRT", 8: "SIGFPE", 9: "SIGKILL", 11: "SIGSEGV", 15: "SIGTERM"}
+
+
+def classify_log(path: pathlib.Path, rc=None):
+    """``(status, reason)`` from one per-pair log and, when known, its exit code.
+
+    The exit code is consulted FIRST for a signal death. A framework whose generated binary
+    crashes takes the interpreter with it, and a process killed by a signal never flushes its
+    buffered output -- so the log of the pair that most needs explaining is the one most likely
+    to be empty. Without the code, that is indistinguishable from a run that printed nothing.
+    """
+    if rc is not None and rc >= 128:
+        sig = rc - 128
+        return "error", ("process killed by signal %d (%s) -- the framework's generated binary "
+                         "crashed at runtime; no output survived" % (sig, _SIGNALS.get(sig, "unknown")))
     if not path.is_file():
         return "missing", "no log recorded"
     text = path.read_text(errors="replace")
@@ -75,6 +89,8 @@ def main():
     ap.add_argument("--frameworks", default="numpy pluto dace_cpu")
     ap.add_argument("--json", required=True)
     ap.add_argument("--summary", required=True)
+    ap.add_argument("--joblog", help="slurm job log; exit codes are recovered from its "
+                                     "`END <fw> <kernel> rc=<n>` lines when no .rc sidecar exists")
     args = ap.parse_args()
 
     logs = pathlib.Path(args.logs)
@@ -96,6 +112,13 @@ def main():
     for bench, fw, details, validated, t in rows:
         by_pair.setdefault((bench, fw), []).append((details, bool(validated), t))
 
+    # Exit codes: the .rc sidecar the launcher writes, falling back to the job log for a campaign
+    # that predates it.
+    rcs = {}
+    if args.joblog and pathlib.Path(args.joblog).is_file():
+        for m in re.finditer(r"END\s+(\S+)\s+(\S+)\s+rc=(\d+)", pathlib.Path(args.joblog).read_text(errors="replace")):
+            rcs[(m.group(2), m.group(1))] = int(m.group(3))
+
     repo = pathlib.Path(__file__).resolve().parent.parent
     status, counts = {}, {}
     for k in kernels:
@@ -108,7 +131,16 @@ def main():
             elif got:
                 st, reason = "invalid", "ran but did not validate against the NumPy reference"
             else:
-                st, reason = classify_log(logs / ("%s.%s.log" % (k, fw)))
+                rc_file = logs / ("%s.%s.rc" % (k, fw))
+                rc = None
+                if rc_file.is_file():
+                    try:
+                        rc = int(rc_file.read_text().strip())
+                    except ValueError:
+                        rc = None
+                if rc is None:
+                    rc = rcs.get((k, fw))
+                st, reason = classify_log(logs / ("%s.%s.log" % (k, fw)), rc)
             variants = sorted({d for d, _, _ in got if d})
             status[k][fw] = {"status": st, "reason": reason, "variants": variants}
             counts.setdefault(fw, {}).setdefault(st, []).append(k)
