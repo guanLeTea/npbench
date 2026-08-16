@@ -96,6 +96,18 @@ def runtime_text(t):
     return "%.2f s" % t
 
 
+def run_kind(repeat):
+    """How the run should describe itself, given how many repetitions it has.
+
+    REPEAT=1 is a correctness check whose timings are single samples and must say so. A repeated
+    run reports medians and must NOT carry the verification wording, which would understate
+    numbers that are fit to quote.
+    """
+    if repeat <= 1:
+        return "VERIFICATION RUN (single sample per kernel), not a performance measurement"
+    return "medians over %d repetitions per kernel" % repeat
+
+
 def caption_lines(subcaption):
     """``subcaption`` as one line, or split at its separator when it is too long for the page.
 
@@ -344,8 +356,9 @@ def page_overview(rows, groups, args, cmap, norm):
 
     fig.text(0.5, 0.985, args.title, ha="center", va="top", fontsize=11.5, fontweight="bold")
     fig.text(0.5, 0.963,
-             "preset %s, REPEAT=%d -- VERIFICATION RUN (single sample per kernel), not a performance measurement"
-             % (args.preset, args.repeat), ha="center", va="top", fontsize=7.6, color="#455055")
+             "preset %s, REPEAT=%d -- %s"
+             % (args.preset, args.repeat, run_kind(args.repeat)),
+             ha="center", va="top", fontsize=7.6, color="#455055")
     for _i, _line in enumerate(caption_lines(args.subcaption)):
         fig.text(0.5, 0.947 - 0.0115 * _i, _line, ha="center", va="top",
                  fontsize=7.0, color="#455055")
@@ -440,8 +453,9 @@ def page_details(rows, args):
     fig.text(0.5, 0.982, "%s -- detailed results and diagnostics" % args.title,
              ha="center", va="top", fontsize=11.5, fontweight="bold")
     fig.text(0.5, 0.958,
-             "preset %s, REPEAT=%d verification run. Explains every blank cell on page 1; "
-             "a speedup is shown only where the result validated." % (args.preset, args.repeat),
+             "preset %s, REPEAT=%d, %s. Explains every blank cell on page 1; "
+             "a speedup is shown only where the result validated."
+             % (args.preset, args.repeat, run_kind(args.repeat)),
              ha="center", va="top", fontsize=7.6, color="#455055")
     for _i, _line in enumerate(caption_lines(args.subcaption)):
         fig.text(0.5, 0.937 - 0.0115 * _i, _line, ha="center", va="top",

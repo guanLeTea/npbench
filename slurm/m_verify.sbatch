@@ -49,13 +49,21 @@ export TIMEOUT="${TIMEOUT:-600}"
 # structurally incapable of reporting the best of three DaCe transformations.
 export FRAMEWORKS="${FRAMEWORKS:-numpy pluto dace_cpu_autoopt}"
 
+if [[ "${REPEAT}" -le 1 ]]; then
+    CAMPAIGN="${CAMPAIGN:-m-verify}"
+    PURPOSE="preset-${PRESET} correctness verification at REPEAT=${REPEAT}; not a performance measurement"
+else
+    CAMPAIGN="${CAMPAIGN:-l-final}"
+    PURPOSE="preset-${PRESET} performance campaign at REPEAT=${REPEAT}; medians over ${REPEAT} repetitions, every reported timing from a validated run"
+fi
+
 RPN="${SLURM_NTASKS_PER_NODE:-4}"; RPN="${RPN%%(*}"
 export RANKS="${SLURM_NTASKS:-${RPN}}"
 CPT="${SLURM_CPUS_PER_TASK:-72}"
 
 # The campaign namespace. Keyed on the job id and REFUSED if it already exists: NPBench APPENDS
 # to whatever npbench.db it finds, so a reused namespace silently mixes two campaigns.
-export NS="${REPO}/results/m-verify-${JOB}"
+export NS="${REPO}/results/${CAMPAIGN}-${JOB}"
 if [[ -e "${NS}" && -n "$(ls -A "${NS}" 2>/dev/null | grep -v '^slurm-' || true)" ]]; then
     echo "campaign namespace ${NS} already has artifacts; refusing to append into it" >&2
     exit 2
@@ -75,8 +83,8 @@ NK=$(wc -l < "${KERNELS_FILE}")
 DACE_TREE="${DACE_TREE:-/users/levwidmer/dace}"
 {
     echo "{"
-    echo "  \"campaign\": \"m-verify\", \"job\": \"${JOB}\","
-    echo "  \"purpose\": \"preset-M correctness verification at REPEAT=1; not a performance measurement\","
+    echo "  \"campaign\": \"${CAMPAIGN}\", \"job\": \"${JOB}\","
+    echo "  \"purpose\": \"${PURPOSE}\","
     echo "  \"date\": \"$(date -Is)\", \"node\": \"$(hostname -s)\","
     echo "  \"preset\": \"${PRESET}\", \"repeat\": ${REPEAT}, \"timeout_s\": ${TIMEOUT},"
     echo "  \"kernels\": ${NK}, \"frameworks\": \"${FRAMEWORKS}\","
