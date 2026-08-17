@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Two-page thesis report for a PolyBench-derived NPBench campaign.
+"""Thesis report for a PolyBench-derived NPBench campaign: two pages, plus an
+optional third when per-sample statistics are supplied.
 
 Page 1 -- a compact speedup heatmap in the style of the HPCAgent-Bench figure: one row per
 kernel, columns ``Pluto | DaCe auto_opt | NumPy``, kernels grouped by PolyBench category. Colour
@@ -10,6 +11,9 @@ as 2x; a linear ramp would squeeze every regression into a narrow band next to n
 Page 2 -- the diagnostics behind page 1: per kernel, the NumPy runtime, both speedups or their
 status, the validation verdict, and the reason a cell is blank. Page 1 is the comparison; page 2
 is why some of it is missing.
+
+Page 3 (with ``--stats``) -- raw runtime distributions for a couple of contrasting kernels, as
+violins over every sample, with the median and its bootstrap confidence interval.
 
 A speedup is drawn ONLY from a row whose ``validated`` flag is set. A declined, crashed or
 unvalidated cell is hatched and labelled, never coloured on the speedup ramp -- the two encode
@@ -358,7 +362,7 @@ def page_overview(rows, groups, args, cmap, norm):
     fig.text(0.5, 0.985, args.title, ha="center", va="top", fontsize=11.5, fontweight="bold")
     fig.text(0.5, 0.963,
              "preset %s, REPEAT=%d -- %s"
-             % (args.preset, args.repeat, run_kind(args.repeat)),
+             % (args.preset, args.repeat, args.run_label),
              ha="center", va="top", fontsize=7.6, color="#455055")
     for _i, _line in enumerate(caption_lines(args.subcaption)):
         fig.text(0.5, 0.947 - 0.0115 * _i, _line, ha="center", va="top",
@@ -460,14 +464,161 @@ def page_details(rows, args):
 
     fig.text(0.5, 0.982, "%s -- detailed results and diagnostics" % args.title,
              ha="center", va="top", fontsize=11.5, fontweight="bold")
-    fig.text(0.5, 0.958,
-             "preset %s, REPEAT=%d, %s. Explains every blank cell on page 1; "
-             "a speedup is shown only where the result validated."
-             % (args.preset, args.repeat, run_kind(args.repeat)),
-             ha="center", va="top", fontsize=7.6, color="#455055")
+    # Wrapped, not one line: page 2 is wider than page 1 but a long --run-label still overruns
+    # both margins, which silently eats the start and the end of the sentence.
+    sub = ("preset %s, REPEAT=%d, %s. Explains every blank cell on page 1; "
+           "a speedup is shown only where the result validated."
+           % (args.preset, args.repeat, args.run_label))
+    sub_lines = textwrap.wrap(sub, width=150)
+    for _i, _line in enumerate(sub_lines):
+        fig.text(0.5, 0.958 - 0.0125 * _i, _line, ha="center", va="top",
+                 fontsize=7.6, color="#455055")
+    _y = 0.937 - 0.0125 * (len(sub_lines) - 1)
     for _i, _line in enumerate(caption_lines(args.subcaption)):
-        fig.text(0.5, 0.937 - 0.0115 * _i, _line, ha="center", va="top",
+        fig.text(0.5, _y - 0.0115 * _i, _line, ha="center", va="top",
                  fontsize=7.0, color="#455055")
+    return fig
+
+
+
+# ------------------------------------------------------------------------------- page 3
+
+#: Kernels given a distribution page, with the reason each was chosen. Two, deliberately: the
+#: point is to show two OPPOSITE situations at readable size, not to reprint the whole suite.
+VIOLIN_KERNELS = [
+    ("gemm", "NumPy and DaCe reach a tuned GEMM; Pluto optimises the loop nest it was given "
+             "rather than substituting a BLAS call"),
+    ("heat_3d", "a regular affine stencil -- the case polyhedral tiling and parallelisation "
+                "are designed for"),
+]
+
+
+def raw_samples(db, preset, db_name, framework, variant=None):
+    """Every VALIDATED runtime sample for one (kernel, framework), in seconds."""
+    conn = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
+    rows = conn.execute(
+        "select details, validated, time from results where preset = ? and benchmark = ? "
+        "and framework = ?", (preset, db_name, framework)).fetchall()
+    conn.close()
+    return np.asarray([float(t) for d, v, t in rows
+                       if v and (variant is None or not framework.startswith("dace") or (d or "") == variant)],
+                      dtype=float)
+
+
+def _unit(vals):
+    """A common unit for one kernel's three violins, so they can be read against each other."""
+    m = float(np.median(vals))
+    if m < 1e-3:
+        return 1e6, "us"
+    if m < 1.0:
+        return 1e3, "ms"
+    return 1.0, "s"
+
+
+def page_distributions(args, stats_by_pair):
+    """Runtime distributions for :data:`VIOLIN_KERNELS`: one panel per (kernel, implementation).
+
+    Raw runtimes, not speedups -- a speedup distribution folds two samples together and hides
+    which side is actually spread out.
+
+    Each implementation gets its OWN y-range, and that is the whole design decision. Within one
+    kernel the three implementations differ by up to 170x while each distribution is tighter than
+    3% of its own median, so a shared axis renders all three as flat lines and shows nothing; that
+    is exactly what the first version of this page did. Units stay identical across a kernel's
+    three panels (printed on each), and the medians are printed as text so the cross-implementation
+    comparison is still readable -- it is simply carried by the numbers rather than by pixel height,
+    which at these ratios is the only honest option.
+    """
+    cols = [("numpy", "NumPy", "#b8912a"), ("pluto", "Pluto", "#2f7a3f"),
+            (args.dace_framework, "DaCe auto_opt", "#2b6ca3")]
+    nk, nc = len(VIOLIN_KERNELS), len(cols)
+
+    fig = plt.figure(figsize=(10.0, 2.95 * nk + 1.15))
+    repo = pathlib.Path(__file__).resolve().parent.parent
+
+    for ki, (kernel, why) in enumerate(VIOLIN_KERNELS):
+        db_name = json.loads((repo / "bench_info" / ("%s.json" % kernel)).read_text())["benchmark"]["short_name"]
+        samples = {}
+        for fw, label, colour in cols:
+            s = raw_samples(args.db, args.preset, db_name, fw, args.dace_variant)
+            if s.size:
+                samples[fw] = s
+        if not samples:
+            continue
+        scale, unit = _unit(np.concatenate(list(samples.values())))
+
+        row_top = 1.0 - (0.175 + ki * 0.415)
+        for ci, (fw, label, colour) in enumerate(cols):
+            ax = fig.add_axes([0.075 + ci * 0.315, row_top - 0.215, 0.205, 0.205])
+            s = samples.get(fw)
+            if s is None or not s.size:
+                ax.set_visible(False)
+                continue
+            v = s * scale
+            med = float(np.median(v))
+
+            parts = ax.violinplot([v], positions=[0], showextrema=False, showmedians=False,
+                                  widths=0.9, bw_method=0.4)
+            for body in parts["bodies"]:
+                body.set_facecolor(colour); body.set_alpha(0.28)
+                body.set_edgecolor(colour); body.set_linewidth(1.0)
+
+            rng = np.random.default_rng(args.seed + 7 * ki + ci)
+            ax.scatter(rng.uniform(-0.085, 0.085, v.size), v, s=6.0, color=colour,
+                       alpha=0.55, zorder=3, linewidths=0)
+
+            st = stats_by_pair.get((db_name, fw))
+            if st:
+                lo, hi = st["ci95_median_lo_s"] * scale, st["ci95_median_hi_s"] * scale
+                # CI as a capped vertical bar OFFSET to the right of the cloud, so it is never
+                # read as part of the violin
+                ax.plot([0.36, 0.36], [lo, hi], color="#16232b", lw=1.6, zorder=6)
+                for y in (lo, hi):
+                    ax.plot([0.30, 0.42], [y, y], color="#16232b", lw=1.6, zorder=6)
+            ax.plot([-0.46, 0.46], [med, med], color="#16232b", lw=1.7, zorder=7)
+
+            ax.set_title(label, fontsize=8.6, fontweight="bold", color=colour, pad=5)
+            ax.set_xticks([])
+            ax.set_xlim(-0.62, 0.62)
+            ax.tick_params(axis="y", labelsize=7.0)
+            ax.grid(axis="y", color="#e8ebec", lw=0.5)
+            ax.set_axisbelow(True)
+            for sp in ("top", "right", "bottom"):
+                ax.spines[sp].set_visible(False)
+            if ci == 0:
+                ax.set_ylabel("runtime (%s)" % unit, fontsize=8.0)
+            sub = "median %.4g %s" % (med, unit)
+            if st:
+                sub += "\n95%% CI [%.4g, %.4g]" % (st["ci95_median_lo_s"] * scale,
+                                                   st["ci95_median_hi_s"] * scale)
+            ax.text(0.5, -0.085, sub, transform=ax.transAxes, ha="center", va="top",
+                    fontsize=6.9, color="#33424b", linespacing=1.35)
+
+        n_s = len(next(iter(samples.values())))
+        fig.text(0.075, row_top + 0.050, "%s   -   n=%d per implementation" % (kernel, n_s),
+                 fontsize=9.2, fontweight="bold", va="bottom")
+        # wrapped explicitly: matplotlib's wrap=True measures against the FIGURE, not the text's
+        # own anchor, so a left-anchored line runs off the right edge instead of wrapping
+        fig.text(0.075, row_top + 0.028, "\n".join(textwrap.wrap(why, width=118)),
+                 fontsize=7.4, color="#455055", va="bottom", linespacing=1.3)
+
+    fig.text(0.5, 0.983, "%s -- runtime distributions" % args.title,
+             ha="center", va="top", fontsize=11.0, fontweight="bold")
+    fig.text(0.5, 0.958,
+             "preset %s, %s. Every one of the %d samples is plotted; the violin is a kernel-density "
+             "estimate over them." % (args.preset, args.run_label, args.repeat),
+             ha="center", va="top", fontsize=7.2, color="#455055")
+    fig.text(0.5, 0.940,
+             "Thin rule = median; capped bar to its right = 95%% bootstrap CI of the median "
+             "(%d resamples, seed %d). No outliers removed. Each implementation has its own "
+             "y-range -- see note below." % (args.resamples, args.seed),
+             ha="center", va="top", fontsize=7.2, color="#455055")
+    footer = ("y-ranges differ BETWEEN implementations because their runtimes differ by up to two "
+              "orders of magnitude while each distribution is tighter than 3% of its own median; a "
+              "shared axis would flatten all three to lines. Units are identical within each "
+              "kernel and the medians are printed, so the comparison is carried by the numbers.")
+    fig.text(0.5, 0.012, "\n".join(textwrap.wrap(footer, width=132)),
+             ha="center", va="bottom", fontsize=7.0, color="#5a666d", linespacing=1.35)
     return fig
 
 
@@ -482,11 +633,19 @@ def main():
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--dace-framework", default="dace_cpu_autoopt")
     ap.add_argument("--dace-variant", default=None)
+    ap.add_argument("--stats", help="stats.json from slurm/stats.py; enables the distributions page")
+    ap.add_argument("--seed", type=int, default=20260817)
+    ap.add_argument("--resamples", type=int, default=10000)
+    ap.add_argument("--no-page3", action="store_true", help="write pages 1-2 only")
+    ap.add_argument("--run-label", default="",
+                    help="how the run describes itself in the captions; defaults to run_kind(repeat)")
     ap.add_argument("--dace-column-label", default="DaCe\nauto_opt")
     ap.add_argument("--title", default="NPBench PolyBench-derived kernels: Pluto vs DaCe auto_optimize")
     ap.add_argument("--subcaption", default="")
     args = ap.parse_args()
 
+    if not args.run_label:
+        args.run_label = run_kind(args.repeat)
     rows, groups, stamps = build_rows(args)
     if not args.subcaption:
         dace = sorted({v.split("+", 1)[1] for v in stamps if v and "+" in v})
@@ -499,9 +658,19 @@ def main():
 
     f1, agg = page_overview(rows, groups, args, cmap, norm)
     f2 = page_details(rows, args)
+    f3 = None
+    if args.stats and not args.no_page3:
+        meta = json.loads(pathlib.Path(args.stats).read_text())
+        args.seed = meta.get("seed", args.seed)
+        args.resamples = meta.get("resamples", args.resamples)
+        by_pair = {(r["db_name"], r["framework"]): r for r in meta["pairs"]}
+        f3 = page_distributions(args, by_pair)
+
     with PdfPages(args.output) as pdf:
         pdf.savefig(f1)
         pdf.savefig(f2)
+        if f3 is not None:
+            pdf.savefig(f3)
         # Carried in the document itself, not only in the printed caption: the toolchain is the
         # first thing anyone re-running these numbers needs, and a caption does not survive being
         # cropped into a thesis figure.
@@ -516,8 +685,12 @@ def main():
     if args.png_prefix:
         f1.savefig("%s-p1.png" % args.png_prefix, dpi=140)
         f2.savefig("%s-p2.png" % args.png_prefix, dpi=140)
+        if f3 is not None:
+            f3.savefig("%s-p3.png" % args.png_prefix, dpi=190)
     plt.close(f1)
     plt.close(f2)
+    if f3 is not None:
+        plt.close(f3)
     print("wrote %s" % args.output)
     for role, g, k in agg:
         print("  geo-mean %-6s %.2fx over the %d kernels it answered" % (role, g, k))
