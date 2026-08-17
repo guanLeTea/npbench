@@ -249,6 +249,17 @@ SEMANTIC_DIVERGENCE: Dict[str, str] = {
 #: Every other tracked kernel was screened for this and is deterministic: each was run once
 #: sequentially and three times on 32 threads, and the outputs compared exactly.
 UNSOUND_PARALLELIZATION: Dict[str, str] = {
+    # Rechecked against PolyBench/C 4.2.1 from scratch: `table[i][j]` reads `table[k+1][j]` for
+    # k+1 in (i, j], i.e. rows BELOW i, which the decreasing `i` loop writes in later iterations.
+    # The i loop therefore carries a real dependence and cannot be parallel -- the structure
+    # confirms the measurement rather than the other way round.
+    #
+    # Configuration sweep, each validated over many runs at several sizes and thread counts:
+    # --lastwriter, --rar, --nofuse, --innerpar and --second-level-tile all still race
+    # (--second-level-tile looked clean at 9 runs and failed 72 of 288 under stress, which is why
+    # none of these is trusted on a short test). `--multipar` survived 504 runs at N=120..900 on
+    # 4..72 threads with a full-table FNV hash and never differed -- promising, but it rests on the
+    # same dependence analysis that is demonstrably wrong here, so it is recorded and not adopted.
     "nussinov": ("polycc marks the tiled `i` loop `#pragma omp parallel for`, but nussinov's "
                  "`table[i][j] = max(table[i][j], table[i][k] + table[k+1][j])` reads row k+1 while "
                  "another thread is still writing it. Measured against the untransformed reference "
@@ -325,26 +336,33 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     Adapter(outputs=[("x", np.float64, lambda a: (a["N"], ), _zeros(np.float64)),
                      ("y", np.float64, lambda a: (a["N"], ), _zeros(np.float64))],
             returns=["x", "y"]),
-    # adi is DECLINED, and not for any reason this adapter can reach -- polycc miscompiles it.
-    # Investigated to exhaustion, because its semantics are canonical now and both other columns
-    # validate, so it was the last plausible recovery:
+    # adi is DECLINED. Re-investigated from scratch, including the hypothesis that the NumPy or
+    # DaCe side was still non-canonical. It is not: both match untransformed canonical PolyBench/C
+    # across nine (N, TSTEPS) combinations -- worst relative error 1.3e-13 for NumPy and 5.6e-14
+    # for DaCe, i.e. floating-point reassociation and nothing else.
     #
-    #   * Clan cannot parse PolyBench's own `DX = 1.0/(DATA_TYPE)_PB_N` -- Clan does not run the
-    #     C preprocessor, so `DATA_TYPE` is an unknown identifier and `(DATA_TYPE)` is not a cast.
-    #   * Expanding the kernel's OWN macros first (leaving `#include`s for the compiler) fixes
-    #     that: Clan then extracts all 27 statements. The expansion is semantics-neutral --
-    #     bit-identical to the canonical source at -O0/-O1/-O2/-O3 over 3600 values.
-    #   * But polycc's OUTPUT is then wrong: 1514 of 1600 values differ from the untransformed
-    #     canonical at N=40, T=5. Identical error under --tile/--parallel/--nofuse/--maxfuse/
-    #     --lastwriter/--nointratileopt/--nodiamond-tile AND under plain polycc with no tiling
-    #     and no parallelization; identical again after lifting v/p/q and the scalars to
-    #     parameters (which is itself bit-identical untransformed). Same result on 1, 8 and 32
-    #     threads, so it is a wrong schedule, not a race.
-    #   * The pet frontend parses the cast but emits doubly-negated subscripts; bypassing that
-    #     guard gives relative error 82.8.
+    # TWO separate defects sit between adi and a correct transform.
     #
-    # So the preprocessing step is deliberately NOT integrated: it would change the source fed to
-    # Clan for all 23 kernels and buy nothing, since adi stays wrong on the far side of it.
+    # 1. CLAN TRANSPOSES THE SCOP PARAMETERS. Clan's own scop for the statement `v[0][i] = 1.0`
+    #    carries `-t+N >= 0` and `-i+TSTEPS-2 >= 0`, when the loops are `t=1..TSTEPS` and
+    #    `i=1..N-1`. The two parameters are swapped in the domain constraints, so polycc emits
+    #    `if (TSTEPS >= 3)` guarding spatial loops bounded by `TSTEPS-2`: at TSTEPS=1 the whole
+    #    scop is skipped and u is returned untouched, and at TSTEPS > N it writes past the arrays
+    #    (measured: SIGSEGV at N=8, TSTEPS=20). The trigger is that adi's parameters first appear
+    #    inside non-affine casts (`1.0/(DATA_TYPE)_PB_N`) ahead of any loop; hoisting that
+    #    loop-invariant scalar block above `#pragma scop` -- bit-identical to canonical at every
+    #    size tested -- gives Clan the correct parameter order and correct bounds.
+    #
+    # 2. PLUTO ORDERS THE BACK-SUBSTITUTION BEFORE ITS PRODUCER. With (1) fixed, polycc still
+    #    emits, inside one tile, the reversed `j` loop that READS p and q ahead of the forward
+    #    loop that WRITES them, so v is computed from zeros. Identical wrong output under
+    #    --tile/--parallel/--nofuse/--maxfuse/--lastwriter/--rar/--innerpar/--nointratileopt/
+    #    --nodiamond-tile and plain polycc, on both frontends, and identical on 1, 8 and 32
+    #    threads -- a wrong schedule, not a race. There is no configuration that fixes it, so
+    #    the hoist in (1) is not applied: it would trade a loud failure for a quieter one.
+    #
+    # Validation is what stands between this and a silent wrong number, and it holds: every
+    # candidate above was rejected by comparison against the untransformed canonical kernel.
     #
     # b1/b2 are ABI padding: the scop computes B1 = 2.0 and B2 = 1.0 itself, inside the scop,
     # and discards these two with `(void)`. Passed as those literals so the ABI reads as what
@@ -808,13 +826,21 @@ def run_polycc(reference: pathlib.Path, out: pathlib.Path) -> None:
         os.replace(str(tmp_out), str(out))
 
 
-def compile_shared(source: pathlib.Path, so: pathlib.Path) -> None:
-    """Compile polycc's output into ``so``, or raise."""
+def compile_shared(source: pathlib.Path, so: pathlib.Path, openmp: bool = True) -> None:
+    """Compile polycc's output into ``so``, or raise.
+
+    ``openmp=False`` drops ``-fopenmp`` so the ``#pragma omp parallel for`` polycc emitted is
+    ignored by the compiler and the tiled nest runs on one thread. Nothing in the generated C
+    changes -- it is compiled exactly as polycc wrote it -- which is what separates this from
+    editing the transform. It is how a kernel whose parallel decoration is UNSOUND can still be
+    measured as what Pluto actually computed; see :data:`UNSOUND_PARALLELIZATION`.
+    """
     exe = shutil.which("clang")
     if exe is None:
         raise PlutoUnavailable("clang is not on PATH (source slurm/npbench-env.sh)")
     tmp_so = so.with_suffix(so.suffix + ".tmp")
-    cmd = [exe, *CLANG_FLAGS, "-shared", "-o", str(tmp_so), str(source), "-lm"]
+    flags = CLANG_FLAGS if openmp else tuple(f for f in CLANG_FLAGS if f != "-fopenmp")
+    cmd = [exe, *flags, "-shared", "-o", str(tmp_so), str(source), "-lm"]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CLANG_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -864,11 +890,13 @@ class PlutoFramework(Framework):
             raise PlutoUnavailable("{b}: port and PolyBench original differ semantically. {d}".format(
                 b=bench.bname, d=divergence))
 
+        # An unsound parallel decoration is no longer a decline. polycc's TRANSFORMATION of these
+        # kernels is correct -- it is only the `omp parallel for` it hangs on a loop that carries a
+        # dependence that is not -- so the transform is kept exactly as generated and compiled
+        # without -fopenmp. What gets timed is genuinely Pluto's tiled code; it just runs on one
+        # thread, and says so, exactly like `durbin` and `ludcmp`. Timing the parallel build
+        # instead would be timing a race.
         racy = UNSOUND_PARALLELIZATION.get(bench.bname)
-        if racy:
-            raise PlutoUnavailable(
-                "{b}: polycc's parallelization is unsound, so a timing here would be a race. "
-                "{d}".format(b=bench.bname, d=racy))
 
         reference = reference_source(bench)
         if not reference.is_file():
@@ -898,7 +926,11 @@ class PlutoFramework(Framework):
         if _stale(transformed, source):
             run_polycc(source, transformed)
         if _stale(so, transformed):
-            compile_shared(transformed, so)
+            compile_shared(transformed, so, openmp=not racy)
+        if racy:
+            print("PlutoSequential: {b}: polycc's transformation is correct but its `omp parallel "
+                  "for` is not, so the unmodified transform is compiled without -fopenmp and runs "
+                  "single-threaded. {d}".format(b=bench.bname, d=racy))
 
         lib = ctypes.CDLL(str(so))
         try:

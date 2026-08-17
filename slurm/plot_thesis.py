@@ -175,10 +175,10 @@ def short_reason(status, reason):
                 "generated code, not our ABI adaptation.")
 
     if "polycc failed" in r and "Clan" in r:
-        return ("Pluto transformation. Clan rejects adi's canonical cast 1.0/(DATA_TYPE)_PB_N, but expanding "
-                "PolyBench's macros first (bit-identical to canonical) gets all 27 statements extracted -- "
-                "and polycc then miscompiles it: 1514 of 1600 values wrong at N=40, identically under every "
-                "tiling, fusion and parallelization setting. Deterministic, not a race.")
+        return ("Two defects. Clan transposes adi's scop parameters: its domain for v[0][i] says -t+N>=0 and "
+                "-i+TSTEPS-2>=0 where the loops are t=1..TSTEPS and i=1..N-1, so polycc guards on TSTEPS and "
+                "can write past the arrays. Hoisting the scalar setup fixes that, but polycc then still emits "
+                "the back-substitution before the loop producing its p and q.")
 
     if "polycc failed" in r:
         return ("Pluto transformation: polycc aborts inside pluto_auto_transform on the assertion "
@@ -251,7 +251,8 @@ def build_rows(args):
                 if t is not None and nt:
                     e[role] = {"status": "validated", "speedup": nt / t, "time": t, "variant": variant,
                                # a validated measurement can still be single-threaded; see page 2
-                               "sequential": bool(st.get("sequential"))}
+                               "sequential": bool(st.get("sequential")),
+                               "note": st.get("note", "")}
                 elif var:
                     e[role] = {"status": "invalid",
                                "reason": ("variant %r not validated" % pin) if pin else
@@ -426,10 +427,17 @@ def page_details(rows, args):
         # recurrences -- so their speedups are one-thread numbers standing beside 72-thread
         # ones, and the table has to say so where the number is read.
         if not note and p.get("sequential"):
-            note = ("Pluto: correct and tiled, but polycc marked no loop parallel -- this is a "
-                    "SINGLE-THREADED result. The kernel is an inherently sequential recurrence and "
-                    "both polycc frontends agree there is no parallelism to find, so the speedup "
-                    "is not comparable to the 72-thread rows above.")
+            if "unsound" in (p.get("note") or "") or "parallel for" in (p.get("note") or ""):
+                note = ("Pluto: SINGLE-THREADED. polycc's transformation is correct and tiled, but "
+                        "the `omp parallel for` it puts on the i loop is not: that loop reads rows "
+                        "below i which later iterations write. The transform is used exactly as "
+                        "generated and compiled without -fopenmp, so the pragma is inert. Validated "
+                        "27/27 over three presets and 1/8/72 threads.")
+            else:
+                note = ("Pluto: correct and tiled, but polycc marked no loop parallel -- this is a "
+                        "SINGLE-THREADED result. The kernel is an inherently sequential recurrence "
+                        "and both polycc frontends agree there is no parallelism to find, so the "
+                        "speedup is not comparable to the 72-thread rows above.")
         if note:
             # Centred on the row and adaptive: a truncated explanation is worse than a dense
             # one, since the whole point of this page is that the reason is complete.
