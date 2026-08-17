@@ -569,7 +569,13 @@ def page_distributions(args, stats_by_pair):
 
             st = stats_by_pair.get((db_name, fw))
             if st:
-                lo, hi = st["ci95_median_lo_s"] * scale, st["ci95_median_hi_s"] * scale
+                # The moving-block interval, not the IID one. These are sequential measurements
+                # and the campaign audit found significant lag-1 autocorrelation or monotone drift
+                # in 37 of 68 pairs, which is exactly the condition under which resampling
+                # individual points understates the spread. Falls back to the IID interval only
+                # if a stats file predating the block columns is supplied.
+                lo = st.get("ci95_block_lo_s", st["ci95_median_lo_s"]) * scale
+                hi = st.get("ci95_block_hi_s", st["ci95_median_hi_s"]) * scale
                 # CI as a capped vertical bar OFFSET to the right of the cloud, so it is never
                 # read as part of the violin
                 ax.plot([0.36, 0.36], [lo, hi], color="#16232b", lw=1.6, zorder=6)
@@ -589,8 +595,10 @@ def page_distributions(args, stats_by_pair):
                 ax.set_ylabel("runtime (%s)" % unit, fontsize=8.0)
             sub = "median %.4g %s" % (med, unit)
             if st:
-                sub += "\n95%% CI [%.4g, %.4g]" % (st["ci95_median_lo_s"] * scale,
-                                                   st["ci95_median_hi_s"] * scale)
+                sub += "\n95%% CI [%.4g, %.4g]" % (lo, hi)
+                r1 = st.get("lag1_autocorr")
+                if r1 is not None and abs(r1) > 2.0 / np.sqrt(v.size):
+                    sub += "\nlag-1 acf %+.2f" % r1
             ax.text(0.5, -0.085, sub, transform=ax.transAxes, ha="center", va="top",
                     fontsize=6.9, color="#33424b", linespacing=1.35)
 
@@ -604,15 +612,14 @@ def page_distributions(args, stats_by_pair):
 
     fig.text(0.5, 0.983, "%s -- runtime distributions" % args.title,
              ha="center", va="top", fontsize=11.0, fontweight="bold")
-    fig.text(0.5, 0.958,
-             "preset %s, %s. Every one of the %d samples is plotted; the violin is a kernel-density "
-             "estimate over them." % (args.preset, args.run_label, args.repeat),
-             ha="center", va="top", fontsize=7.2, color="#455055")
-    fig.text(0.5, 0.940,
-             "Thin rule = median; capped bar to its right = 95%% bootstrap CI of the median "
-             "(%d resamples, seed %d). No outliers removed. Each implementation has its own "
-             "y-range -- see note below." % (args.resamples, args.seed),
-             ha="center", va="top", fontsize=7.2, color="#455055")
+    head = ("preset %s, %s. Every one of the %d samples is plotted; the violin is a kernel-density "
+            "estimate over them. Thin rule = median; capped bar to its right = 95%% MOVING-BLOCK "
+            "bootstrap CI of the median (%d resamples, seed %d, block 6) -- these are sequential "
+            "samples, so the IID bootstrap would understate it. No outliers removed."
+            % (args.preset, args.run_label, args.repeat, args.resamples, args.seed))
+    for _i, _line in enumerate(textwrap.wrap(head, width=140)):
+        fig.text(0.5, 0.960 - 0.0165 * _i, _line, ha="center", va="top",
+                 fontsize=7.2, color="#455055")
     footer = ("y-ranges differ BETWEEN implementations because their runtimes differ by up to two "
               "orders of magnitude while each distribution is tighter than 3% of its own median; a "
               "shared axis would flatten all three to lines. Units are identical within each "

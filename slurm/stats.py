@@ -52,6 +52,49 @@ def bootstrap_median_ci(samples, resamples, seed, alpha=0.05):
     return float(lo), float(hi)
 
 
+def lag1_autocorr(samples):
+    """Lag-1 autocorrelation in EXECUTION order. |r| > 2/sqrt(n) is significant at 95%."""
+    x = samples - samples.mean()
+    d = float(np.sum(x * x))
+    return float(np.sum(x[1:] * x[:-1]) / d) if d > 0 else 0.0
+
+
+def drift_spearman(samples):
+    """Rank correlation of runtime against repetition index: monotone drift over the run."""
+    n = samples.size
+    i = np.arange(n)
+    ri = np.argsort(np.argsort(i)).astype(float)
+    rv = np.argsort(np.argsort(samples)).astype(float)
+    ri -= ri.mean(); rv -= rv.mean()
+    d = float(np.sqrt(np.sum(ri * ri) * np.sum(rv * rv)))
+    return float(np.sum(ri * rv) / d) if d > 0 else 0.0
+
+
+def block_bootstrap_median_ci(samples, resamples, seed, block=6, alpha=0.05):
+    """Moving-block bootstrap CI for the median.
+
+    The IID bootstrap resamples individual points and so assumes the 50 timings are
+    exchangeable. They are not: these are sequential measurements on a shared node, and the
+    Paper x 50 campaign shows lag-1 autocorrelation up to +0.66 and monotone drift up to 2.2%
+    across a run (thermal and contention effects, not noise). Resampling contiguous BLOCKS keeps
+    the local correlation structure inside each block, which is what makes the interval honest
+    when neighbouring samples are related.
+
+    ``block`` is the block length in samples; 6 is roughly where the autocorrelation of these
+    series has decayed.
+    """
+    rng = np.random.default_rng(seed)
+    n = samples.size
+    L = max(2, min(block, n))
+    nb = int(np.ceil(n / L))
+    starts = rng.integers(0, n - L + 1, size=(resamples, nb))
+    meds = np.empty(resamples)
+    for i in range(resamples):
+        meds[i] = np.median(np.concatenate([samples[s:s + L] for s in starts[i]])[:n])
+    lo, hi = np.percentile(meds, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    return float(lo), float(hi), L
+
+
 def multimodality_gap(samples):
     """Largest gap between consecutive sorted samples, as a fraction of the full range.
 
@@ -81,6 +124,7 @@ def main():
     ap.add_argument("--variant", help="restrict a dace framework to one SDFG variant")
     ap.add_argument("--seed", type=int, default=20260817)
     ap.add_argument("--resamples", type=int, default=10000)
+    ap.add_argument("--block", type=int, default=6, help="moving-block bootstrap block length")
     ap.add_argument("--json")
     ap.add_argument("--csv")
     args = ap.parse_args()
@@ -115,6 +159,9 @@ def main():
         q1, q3 = (float(x) for x in np.percentile(a, [25, 75]))
         iqr = q3 - q1
         lo, hi = bootstrap_median_ci(a, args.resamples, args.seed)
+        b_lo, b_hi, blk = block_bootstrap_median_ci(a, args.resamples, args.seed, args.block)
+        r1 = lag1_autocorr(a)
+        rho = drift_spearman(a)
         gap = multimodality_gap(a)
         n_out = int(np.sum((a < med - OUTLIER_FLAG * iqr) | (a > med + OUTLIER_FLAG * iqr))) if iqr > 0 else 0
         riqr = iqr / med if med else float("nan")
@@ -127,11 +174,16 @@ def main():
         spread = (float(a.max() - a.min()) / med) if med else 0.0
         if gap > GAP_FLAG and spread > GAP_MIN_SPREAD: flags.append("possible-multimodal")
         if n_out: flags.append("outliers=%d" % n_out)
+        # serial structure: an IID bootstrap is not justified when either fires
+        if abs(r1) > 2.0 / np.sqrt(a.size): flags.append("autocorrelated(r1=%+.2f)" % r1)
+        if abs(rho) > 0.35: flags.append("drift(rho=%+.2f)" % rho)
         out.append({
             "kernel": names.get(bench, bench), "db_name": bench, "framework": fw,
             "n": int(a.size), "median_s": med, "q1_s": q1, "q3_s": q3, "iqr_s": iqr,
             "min_s": float(a.min()), "max_s": float(a.max()),
             "ci95_median_lo_s": lo, "ci95_median_hi_s": hi,
+            "ci95_block_lo_s": b_lo, "ci95_block_hi_s": b_hi, "block_len": blk,
+            "lag1_autocorr": r1, "drift_spearman": rho,
             "iqr_over_median": riqr, "max_over_min": rng, "ci95_width_over_median": ci_w,
             "largest_gap_frac": gap, "range_over_median": spread,
             "n_outliers_3iqr": n_out, "flags": flags,
@@ -153,7 +205,12 @@ def main():
           % (args.resamples, args.seed))
 
     meta = {"preset": args.preset, "seed": args.seed, "resamples": args.resamples,
-            "method": "percentile bootstrap of the median, 95%", "outlier_removal": "none",
+            "method": "percentile bootstrap of the median, 95%",
+            "method_serial": "moving-block bootstrap of the median, 95%% CI, block=%d" % args.block,
+            "note": ("these are sequential measurements; where lag1_autocorr or drift_spearman is "
+                     "flagged the IID percentile interval understates the uncertainty and the "
+                     "block interval should be quoted instead"),
+            "outlier_removal": "none",
             "validated_rows_only": True, "excluded_rows": dropped, "pairs": out}
     if args.json:
         pathlib.Path(args.json).write_text(json.dumps(meta, indent=2, sort_keys=False))
