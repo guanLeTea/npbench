@@ -13,7 +13,8 @@ status, the validation verdict, and the reason a cell is blank. Page 1 is the co
 is why some of it is missing.
 
 Page 3 (with ``--stats``) -- raw runtime distributions for a couple of contrasting kernels, as
-violins over every sample, with the median and its bootstrap confidence interval.
+violins over every sample, with the median and its bootstrap confidence interval. ``--extra-violins``
+appends further such pages for the kernels in :data:`EXTRA_VIOLIN_PAGES`.
 
 A speedup is drawn ONLY from a row whose ``validated`` flag is set. A declined, crashed or
 unvalidated cell is hatched and labelled, never coloured on the speedup ramp -- the two encode
@@ -492,6 +493,25 @@ VIOLIN_KERNELS = [
                 "are designed for"),
 ]
 
+#: Further distribution pages, grouped so no page carries more than three kernels. These are the
+#: representative cases behind the heatmap rather than another pair of extremes: the rationale
+#: strings stay descriptive of the KERNEL, never of the result, so the figure does not tell the
+#: reader what to conclude from it.
+EXTRA_VIOLIN_PAGES = [
+    [("trmm", "triangular matrix multiply -- a dense BLAS-3 kernel with a triangular iteration "
+              "space"),
+     ("cholesky", "in-place Cholesky factorisation: a sequential outer loop over columns with "
+                  "square-root and division on the diagonal"),
+     ("gramschmidt", "modified Gram-Schmidt QR -- column-by-column orthogonalisation, each column "
+                     "depending on all previous ones")],
+    [("lu", "LU decomposition without pivoting, a triangular dependence structure over the whole "
+            "matrix"),
+     ("seidel_2d", "Gauss-Seidel 2-D stencil: an in-place sweep, so every point depends on "
+                   "neighbours already updated in the same sweep"),
+     ("mvt", "two independent matrix-vector products -- memory-bound BLAS-2, little arithmetic "
+             "per byte moved")],
+]
+
 
 def raw_samples(db, preset, db_name, framework, variant=None):
     """Every VALIDATED runtime sample for one (kernel, framework), in seconds."""
@@ -505,9 +525,19 @@ def raw_samples(db, preset, db_name, framework, variant=None):
                       dtype=float)
 
 
-def _unit(vals):
-    """A common unit for one kernel's three violins, so they can be read against each other."""
-    m = float(np.median(vals))
+def _unit(medians):
+    """A common unit for one kernel's three violins, so they can be read against each other.
+
+    Chosen from the SMALLEST of the three medians, not from the pooled samples. Pooling picks the
+    unit off whichever implementation happens to sit in the middle, which made ``lu`` render in
+    seconds -- printing its Pluto median as 0.09765 s -- while ``heat_3d``, whose middle series
+    is just under a second, rendered in ms. Keying on the fastest series keeps the tightest
+    distribution legible and makes the choice the same for every kernel here.
+    """
+    m = float(np.min(medians))
+    if m >= 1e-3 and float(np.max(medians)) / 1e-3 > 99999.0:
+        # ... unless that would print the slowest series with six digits; then fall back
+        m = float(np.median(medians))
     if m < 1e-3:
         return 1e6, "us"
     if m < 1.0:
@@ -515,7 +545,7 @@ def _unit(vals):
     return 1.0, "s"
 
 
-def page_distributions(args, stats_by_pair):
+def page_distributions(args, stats_by_pair, kernels=None):
     """Runtime distributions for :data:`VIOLIN_KERNELS`: one panel per (kernel, implementation).
 
     Raw runtimes, not speedups -- a speedup distribution folds two samples together and hides
@@ -531,12 +561,19 @@ def page_distributions(args, stats_by_pair):
     """
     cols = [("numpy", "NumPy", "#b8912a"), ("pluto", "Pluto", "#2f7a3f"),
             (args.dace_framework, "DaCe auto_opt", "#2b6ca3")]
-    nk, nc = len(VIOLIN_KERNELS), len(cols)
+    kernels = kernels if kernels is not None else VIOLIN_KERNELS
+    nk = len(kernels)
 
-    fig = plt.figure(figsize=(10.0, 2.95 * nk + 1.15))
+    # Laid out in INCHES and converted, not in hard-coded figure fractions. The original two-kernel
+    # page used fixed fractions, which silently break as soon as a page carries three kernels --
+    # the third row lands at a negative coordinate and disappears off the bottom.
+    head_in, row_in, foot_in = 1.15, 2.95, 1.00
+    fig_h = head_in + row_in * nk + foot_in
+    fig = plt.figure(figsize=(10.0, fig_h))
+    head_f, row_f, foot_f = head_in / fig_h, row_in / fig_h, foot_in / fig_h
     repo = pathlib.Path(__file__).resolve().parent.parent
 
-    for ki, (kernel, why) in enumerate(VIOLIN_KERNELS):
+    for ki, (kernel, why) in enumerate(kernels):
         db_name = json.loads((repo / "bench_info" / ("%s.json" % kernel)).read_text())["benchmark"]["short_name"]
         samples = {}
         for fw, label, colour in cols:
@@ -545,11 +582,14 @@ def page_distributions(args, stats_by_pair):
                 samples[fw] = s
         if not samples:
             continue
-        scale, unit = _unit(np.concatenate(list(samples.values())))
+        scale, unit = _unit([float(np.median(s)) for s in samples.values()])
 
-        row_top = 1.0 - (0.175 + ki * 0.415)
+        slot_top = 1.0 - head_f - ki * row_f
+        ax_h = 0.51 * row_f
+        ax_bot = slot_top - 0.85 * row_f
+        row_top = ax_bot + ax_h
         for ci, (fw, label, colour) in enumerate(cols):
-            ax = fig.add_axes([0.075 + ci * 0.315, row_top - 0.215, 0.205, 0.205])
+            ax = fig.add_axes([0.075 + ci * 0.315, ax_bot, 0.205, ax_h])
             s = samples.get(fw)
             if s is None or not s.size:
                 ax.set_visible(False)
@@ -603,14 +643,14 @@ def page_distributions(args, stats_by_pair):
                     fontsize=6.9, color="#33424b", linespacing=1.35)
 
         n_s = len(next(iter(samples.values())))
-        fig.text(0.075, row_top + 0.050, "%s   -   n=%d per implementation" % (kernel, n_s),
-                 fontsize=9.2, fontweight="bold", va="bottom")
+        fig.text(0.075, row_top + 0.170 * row_f, "%s   -   n=%d per implementation" % (kernel, n_s),
+                 fontsize=10.0, fontweight="bold", va="bottom")
         # wrapped explicitly: matplotlib's wrap=True measures against the FIGURE, not the text's
         # own anchor, so a left-anchored line runs off the right edge instead of wrapping
-        fig.text(0.075, row_top + 0.028, "\n".join(textwrap.wrap(why, width=118)),
-                 fontsize=7.4, color="#455055", va="bottom", linespacing=1.3)
+        fig.text(0.075, row_top + 0.088 * row_f, "\n".join(textwrap.wrap(why, width=118)),
+                 fontsize=7.6, color="#455055", va="bottom", linespacing=1.3)
 
-    fig.text(0.5, 0.983, "%s -- runtime distributions" % args.title,
+    fig.text(0.5, 1.0 - 0.17 / fig_h, "%s -- runtime distributions" % args.title,
              ha="center", va="top", fontsize=11.0, fontweight="bold")
     head = ("preset %s, %s. Every one of the %d samples is plotted; the violin is a kernel-density "
             "estimate over them. Thin rule = median; capped bar to its right = 95%% MOVING-BLOCK "
@@ -618,13 +658,13 @@ def page_distributions(args, stats_by_pair):
             "samples, so the IID bootstrap would understate it. No outliers removed."
             % (args.preset, args.run_label, args.repeat, args.resamples, args.seed))
     for _i, _line in enumerate(textwrap.wrap(head, width=140)):
-        fig.text(0.5, 0.960 - 0.0165 * _i, _line, ha="center", va="top",
+        fig.text(0.5, 1.0 - (0.40 + 0.125 * _i) / fig_h, _line, ha="center", va="top",
                  fontsize=7.2, color="#455055")
     footer = ("y-ranges differ BETWEEN implementations because their runtimes differ by up to two "
               "orders of magnitude while each distribution is tighter than 3% of its own median; a "
               "shared axis would flatten all three to lines. Units are identical within each "
               "kernel and the medians are printed, so the comparison is carried by the numbers.")
-    fig.text(0.5, 0.012, "\n".join(textwrap.wrap(footer, width=132)),
+    fig.text(0.5, 0.10 / fig_h, "\n".join(textwrap.wrap(footer, width=132)),
              ha="center", va="bottom", fontsize=7.0, color="#5a666d", linespacing=1.35)
     return fig
 
@@ -644,6 +684,8 @@ def main():
     ap.add_argument("--seed", type=int, default=20260817)
     ap.add_argument("--resamples", type=int, default=10000)
     ap.add_argument("--no-page3", action="store_true", help="write pages 1-2 only")
+    ap.add_argument("--extra-violins", action="store_true",
+                    help="append the EXTRA_VIOLIN_PAGES distribution pages after page 3")
     ap.add_argument("--run-label", default="",
                     help="how the run describes itself in the captions; defaults to run_kind(repeat)")
     ap.add_argument("--dace-column-label", default="DaCe\nauto_opt")
@@ -665,19 +707,22 @@ def main():
 
     f1, agg = page_overview(rows, groups, args, cmap, norm)
     f2 = page_details(rows, args)
-    f3 = None
+    dist_figs = []
     if args.stats and not args.no_page3:
         meta = json.loads(pathlib.Path(args.stats).read_text())
         args.seed = meta.get("seed", args.seed)
         args.resamples = meta.get("resamples", args.resamples)
         by_pair = {(r["db_name"], r["framework"]): r for r in meta["pairs"]}
-        f3 = page_distributions(args, by_pair)
+        dist_figs.append(page_distributions(args, by_pair))
+        if args.extra_violins:
+            for group in EXTRA_VIOLIN_PAGES:
+                dist_figs.append(page_distributions(args, by_pair, group))
 
     with PdfPages(args.output) as pdf:
         pdf.savefig(f1)
         pdf.savefig(f2)
-        if f3 is not None:
-            pdf.savefig(f3)
+        for _f in dist_figs:
+            pdf.savefig(_f)
         # Carried in the document itself, not only in the printed caption: the toolchain is the
         # first thing anyone re-running these numbers needs, and a caption does not survive being
         # cropped into a thesis figure.
@@ -692,12 +737,12 @@ def main():
     if args.png_prefix:
         f1.savefig("%s-p1.png" % args.png_prefix, dpi=140)
         f2.savefig("%s-p2.png" % args.png_prefix, dpi=140)
-        if f3 is not None:
-            f3.savefig("%s-p3.png" % args.png_prefix, dpi=190)
+        for _i, _f in enumerate(dist_figs):
+            _f.savefig("%s-p%d.png" % (args.png_prefix, 3 + _i), dpi=190)
     plt.close(f1)
     plt.close(f2)
-    if f3 is not None:
-        plt.close(f3)
+    for _f in dist_figs:
+        plt.close(_f)
     print("wrote %s" % args.output)
     for role, g, k in agg:
         print("  geo-mean %-6s %.2fx over the %d kernels it answered" % (role, g, k))
