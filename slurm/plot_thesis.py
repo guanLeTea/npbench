@@ -109,8 +109,8 @@ def run_kind(repeat):
     numbers that are fit to quote.
     """
     if repeat <= 1:
-        return "VERIFICATION RUN (single sample per kernel), not a performance measurement"
-    return "medians over %d repetitions per kernel" % repeat
+        return "single sample per kernel (verification run, not a performance measurement)"
+    return "%d repetitions per kernel" % repeat
 
 
 def caption_lines(subcaption):
@@ -326,15 +326,6 @@ def page_overview(rows, groups, args, cmap, norm):
             yl.append((role, g, len(sp)))
         else:
             cell(j, 0, GAP_FILL, "", hatch="///")
-    # The two column means are over different kernel sets (Pluto answers fewer), so the
-    # like-for-like pair over the kernels BOTH answered is stated in the footnote rather than
-    # leaving the header row to imply a comparison it does not make.
-    shared = [r for r in rows if r["pluto"]["status"] == "validated" and r["dace"]["status"] == "validated"]
-    gshared = {}
-    for role in ("pluto", "dace"):
-        sp = [r[role]["speedup"] for r in shared]
-        if sp:
-            gshared[role] = float(np.exp(np.mean(np.log(sp))))
     tot = [r["numpy"] for r in rows if r["numpy"]]
     cell(2, 0, NUMPY_FILL, runtime_text(float(np.exp(np.mean(np.log(tot))))) if tot else "",
          "#20262b", weight="bold", size=8.0)
@@ -366,23 +357,11 @@ def page_overview(rows, groups, args, cmap, norm):
             ax.plot([-0.02, 3.0], [lo, lo], color="#9aa5ab", lw=1.0, clip_on=False, zorder=4)
         top = hi
 
-    if len(gshared) == 2:
-        fig.text(0.5, 0.012,
-                 "geo-mean row is over the kernels each column answered (Pluto %d, DaCe %d). "
-                 "Over the %d kernels BOTH answered: Pluto %s, DaCe %s."
-                 % (sum(1 for r in rows if r["pluto"]["status"] == "validated"),
-                    sum(1 for r in rows if r["dace"]["status"] == "validated"),
-                    len(shared), speedup_text(gshared["pluto"]), speedup_text(gshared["dace"])),
-                 ha="center", va="bottom", fontsize=6.6, color="#455055")
-
-    fig.text(0.5, 0.985, args.title, ha="center", va="top", fontsize=11.5, fontweight="bold")
-    fig.text(0.5, 0.963,
-             "preset %s, REPEAT=%d -- %s"
-             % (args.preset, args.repeat, args.run_label),
-             ha="center", va="top", fontsize=7.6, color="#455055")
-    for _i, _line in enumerate(caption_lines(args.subcaption)):
-        fig.text(0.5, 0.947 - 0.0115 * _i, _line, ha="center", va="top",
-                 fontsize=7.0, color="#455055")
+    fig.text(0.5, 0.986, args.title, ha="center", va="top", fontsize=13.0, fontweight="bold")
+    fig.text(0.5, 0.961,
+             "Median speedup over NumPy (%d repetitions)" % args.repeat,
+             ha="center", va="top", fontsize=9.4, color="#455055")
+    # The toolchain stamp is not repeated here; page 2 carries it.
 
     # Colour bar: ticks are factors, not log units, so the axis reads in the same notation as the
     # cells.
@@ -392,10 +371,10 @@ def page_overview(rows, groups, args, cmap, norm):
     ticks = [1 / RAMP, 0.1, 0.5, 1, 2, 10, RAMP]
     cb.set_ticks([math.log10(t) for t in ticks])
     cb.set_ticklabels([("%gx" % t) if t >= 1 else ("%.2gx" % t) for t in ticks])
-    cb.ax.tick_params(labelsize=6.4, length=2, pad=1.5)
+    cb.ax.tick_params(labelsize=7.4, length=2, pad=1.5)
     cb.outline.set_visible(False)
-    cb.set_label("speedup vs NumPy   (green = faster, red = slower; log scale)      |      hatched grey = no valid measurement, see page 2",
-                 fontsize=6.6, labelpad=3)
+    cb.set_label("Speedup over NumPy (log scale).    Hatched grey: no valid measurement, see page 2.",
+                 fontsize=8.0, labelpad=4)
 
     return fig, yl
 
@@ -487,13 +466,13 @@ def page_details(rows, args):
             ax.text(xs[5], y, "both columns validated against the NumPy reference", fontsize=6.9,
                     va="center", color="#6b7379", zorder=2)
 
-    fig.text(0.5, 0.982, "%s -- detailed results and diagnostics" % args.title,
+    fig.text(0.5, 0.982, "%s: detailed results" % args.title,
              ha="center", va="top", fontsize=11.5, fontweight="bold")
     # Wrapped, not one line: page 2 is wider than page 1 but a long --run-label still overruns
     # both margins, which silently eats the start and the end of the sentence.
-    sub = ("preset %s, REPEAT=%d, %s. Explains every blank cell on page 1; "
-           "a speedup is shown only where the result validated."
-           % (args.preset, args.repeat, args.run_label))
+    sub = ("Preset %s, %s. Every blank cell on page 1 is accounted for below; "
+           "a speedup is given only where the result validated."
+           % (args.preset, args.run_label))
     sub_lines = textwrap.wrap(sub, width=150)
     for _i, _line in enumerate(sub_lines):
         fig.text(0.5, 0.958 - 0.0125 * _i, _line, ha="center", va="top",
@@ -511,10 +490,10 @@ def page_details(rows, args):
 #: Kernels given a distribution page, with the reason each was chosen. Two, deliberately: the
 #: point is to show two OPPOSITE situations at readable size, not to reprint the whole suite.
 VIOLIN_KERNELS = [
-    ("gemm", "NumPy and DaCe reach a tuned GEMM; Pluto optimises the loop nest it was given "
-             "rather than substituting a BLAS call"),
-    ("heat_3d", "a regular affine stencil -- the case polyhedral tiling and parallelisation "
-                "are designed for"),
+    ("gemm", "Dense matrix multiply. NumPy and DaCe reach tuned BLAS; Pluto transforms the "
+             "loop nest."),
+    ("heat_3d", "Regular affine stencil: the standard case for polyhedral tiling and "
+                "parallelisation."),
 ]
 
 #: Further distribution pages, grouped so no page carries more than three kernels. These are the
@@ -522,18 +501,17 @@ VIOLIN_KERNELS = [
 #: strings stay descriptive of the KERNEL, never of the result, so the figure does not tell the
 #: reader what to conclude from it.
 EXTRA_VIOLIN_PAGES = [
-    [("trmm", "triangular matrix multiply -- a dense BLAS-3 kernel with a triangular iteration "
-              "space"),
-     ("cholesky", "in-place Cholesky factorisation: a sequential outer loop over columns with "
-                  "square-root and division on the diagonal"),
-     ("gramschmidt", "modified Gram-Schmidt QR -- column-by-column orthogonalisation, each column "
-                     "depending on all previous ones")],
-    [("lu", "LU decomposition without pivoting, a triangular dependence structure over the whole "
-            "matrix"),
-     ("seidel_2d", "Gauss-Seidel 2-D stencil: an in-place sweep, so every point depends on "
-                   "neighbours already updated in the same sweep"),
-     ("mvt", "two independent matrix-vector products -- memory-bound BLAS-2, little arithmetic "
-             "per byte moved")],
+    [("trmm", "Triangular matrix multiply: dense BLAS-3 work over a triangular iteration "
+              "space."),
+     ("cholesky", "In-place Cholesky factorisation. Sequential loop over columns; a square "
+                  "root on each diagonal."),
+     ("gramschmidt", "Modified Gram-Schmidt QR. Columns are orthogonalised one at a time, each "
+                     "against all its predecessors.")],
+    [("lu", "LU decomposition without pivoting. Triangular dependences span the whole matrix."),
+     ("seidel_2d", "Gauss-Seidel stencil, swept in place: each point reads neighbours already "
+                   "updated in the same sweep."),
+     ("mvt", "Two independent matrix-vector products. Memory-bound BLAS-2, little arithmetic "
+             "per byte moved.")],
 ]
 
 
@@ -591,7 +569,7 @@ def page_distributions(args, stats_by_pair, kernels=None):
     # Laid out in INCHES and converted, not in hard-coded figure fractions. The original two-kernel
     # page used fixed fractions, which silently break as soon as a page carries three kernels --
     # the third row lands at a negative coordinate and disappears off the bottom.
-    head_in, row_in, foot_in = 1.15, 2.95, 1.00
+    head_in, row_in, foot_in = 0.30, 2.95, 0.30
     fig_h = head_in + row_in * nk + foot_in
     fig = plt.figure(figsize=(10.0, fig_h))
     head_f, row_f, foot_f = head_in / fig_h, row_in / fig_h, foot_in / fig_h
@@ -647,16 +625,16 @@ def page_distributions(args, stats_by_pair, kernels=None):
                     ax.plot([0.30, 0.42], [y, y], color="#16232b", lw=1.6, zorder=6)
             ax.plot([-0.46, 0.46], [med, med], color="#16232b", lw=1.7, zorder=7)
 
-            ax.set_title(label, fontsize=8.6, fontweight="bold", color=colour, pad=5)
+            ax.set_title(label, fontsize=9.8, fontweight="bold", color=colour, pad=5)
             ax.set_xticks([])
             ax.set_xlim(-0.62, 0.62)
-            ax.tick_params(axis="y", labelsize=7.0)
+            ax.tick_params(axis="y", labelsize=8.0)
             ax.grid(axis="y", color="#e8ebec", lw=0.5)
             ax.set_axisbelow(True)
             for sp in ("top", "right", "bottom"):
                 ax.spines[sp].set_visible(False)
             if ci == 0:
-                ax.set_ylabel("runtime (%s)" % unit, fontsize=8.0)
+                ax.set_ylabel("runtime (%s)" % unit, fontsize=9.0)
             sub = "median %.4g %s" % (med, unit)
             if st:
                 sub += "\n95%% CI [%.4g, %.4g]" % (lo, hi)
@@ -664,32 +642,22 @@ def page_distributions(args, stats_by_pair, kernels=None):
                 if r1 is not None and abs(r1) > 2.0 / np.sqrt(v.size):
                     sub += "\nlag-1 acf %+.2f" % r1
             ax.text(0.5, -0.085, sub, transform=ax.transAxes, ha="center", va="top",
-                    fontsize=6.9, color="#33424b", linespacing=1.35)
+                    fontsize=8.0, color="#33424b", linespacing=1.35)
 
         n_s = len(next(iter(samples.values())))
-        fig.text(0.075, row_top + 0.170 * row_f, "%s   -   n=%d per implementation" % (kernel, n_s),
-                 fontsize=10.0, fontweight="bold", va="bottom")
+        fig.text(0.075, row_top + 0.185 * row_f, "%s   (n = %d)" % (kernel, n_s),
+                 fontsize=11.5, fontweight="bold", va="bottom")
         # wrapped explicitly: matplotlib's wrap=True measures against the FIGURE, not the text's
         # own anchor, so a left-anchored line runs off the right edge instead of wrapping
-        fig.text(0.075, row_top + 0.088 * row_f, "\n".join(textwrap.wrap(why, width=118)),
-                 fontsize=7.6, color="#455055", va="bottom", linespacing=1.3)
+        why_lines = textwrap.wrap(why, width=104)
+        if len(why_lines) > 1:
+            raise SystemExit(
+                "plot_thesis: the caption for %r wraps to %d lines; only one fits between the "
+                "heading and the panel titles. Shorten it to about 104 characters.\n  %s"
+                % (kernel, len(why_lines), why))
+        fig.text(0.075, row_top + 0.088 * row_f, why_lines[0],
+                 fontsize=9.0, color="#455055", va="bottom")
 
-    fig.text(0.5, 1.0 - 0.17 / fig_h, "%s -- runtime distributions" % args.title,
-             ha="center", va="top", fontsize=11.0, fontweight="bold")
-    head = ("preset %s, %s. Every one of the %d samples is plotted; the violin is a kernel-density "
-            "estimate over them. Thin rule = median; capped bar to its right = 95%% MOVING-BLOCK "
-            "bootstrap CI of the median (%d resamples, seed %d, block 6) -- these are sequential "
-            "samples, so the IID bootstrap would understate it. No outliers removed."
-            % (args.preset, args.run_label, args.repeat, args.resamples, args.seed))
-    for _i, _line in enumerate(textwrap.wrap(head, width=140)):
-        fig.text(0.5, 1.0 - (0.40 + 0.125 * _i) / fig_h, _line, ha="center", va="top",
-                 fontsize=7.2, color="#455055")
-    footer = ("y-ranges differ BETWEEN implementations because their runtimes differ by up to two "
-              "orders of magnitude while each distribution is tighter than 3% of its own median; a "
-              "shared axis would flatten all three to lines. Units are identical within each "
-              "kernel and the medians are printed, so the comparison is carried by the numbers.")
-    fig.text(0.5, 0.10 / fig_h, "\n".join(textwrap.wrap(footer, width=132)),
-             ha="center", va="bottom", fontsize=7.0, color="#5a666d", linespacing=1.35)
     return fig
 
 
