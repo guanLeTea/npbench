@@ -138,6 +138,13 @@ def short_reason(status, reason):
         return STATUS_SHORT.get(status, status)
     r = " ".join(reason.split())
 
+    # A kernel with no tracked scop was never offered to polycc. Across a corpus with no Pluto
+    # references at all this reason repeats on every row, so it is stated compactly and, above
+    # all, as UNSUPPORTED rather than as a Pluto failure.
+    if "no tracked PolyBench scop" in r:
+        return ("unsupported here -- no PolyBench scop is tracked for this kernel yet, so polycc "
+                "was never invoked. This is a gap in our benchmark, not a Pluto failure.")
+
     if "dropped the statements writing" in r:
         names = r.split("dropped the statements writing", 1)[1].split(" in ", 1)[0]
         names = [n.strip() for n in names.replace("`", "").split(",") if n.strip()]
@@ -227,13 +234,20 @@ def build_rows(args):
         except Exception:
             return k
 
-    known = [k for _, ks in CATEGORY for k in ks]
+    # The grouping is PolyBench's by default. `--categories` supplies a different one for a
+    # corpus PolyBench's categories do not describe (e.g. the wider NPBench kernels), as a JSON
+    # [[label, [kernel, ...]], ...]. Without it nothing changes.
+    categories = CATEGORY
+    if getattr(args, "categories", None) and pathlib.Path(args.categories).is_file():
+        categories = [(lab, list(ks)) for lab, ks in json.loads(pathlib.Path(args.categories).read_text())]
+
+    known = [k for _, ks in categories for k in ks]
     if args.kernels and pathlib.Path(args.kernels).is_file():
         wanted = [l.strip() for l in open(args.kernels) if l.strip()]
     else:
         wanted = known
     groups = []
-    for label, ks in CATEGORY:
+    for label, ks in categories:
         present = [k for k in ks if k in wanted]
         if present:
             groups.append((label, present))
@@ -337,7 +351,8 @@ def page_overview(rows, groups, args, cmap, norm):
                 cell(j, y, GAP_FILL, STATUS_SHORT.get(e["status"], e["status"]), "#5b666d",
                      hatch="///", size=6.4)
         cell(2, y, NUMPY_FILL, runtime_text(r["numpy"]), "#20262b")
-        ax.text(-0.12, y + 0.5, r["kernel"], ha="right", va="center", fontsize=8.0)
+        ksize = 8.0 if len(r["kernel"]) <= 17 else 8.0 * 17.0 / len(r["kernel"])
+        ax.text(-0.12, y + 0.5, r["kernel"], ha="right", va="center", fontsize=max(ksize, 5.8))
 
     # Category brackets down the right edge.
     top = 1
@@ -397,7 +412,9 @@ def page_details(rows, args):
     ax.invert_yaxis()
     ax.axis("off")
 
-    xs = [0.0, 0.095, 0.220, 0.305, 0.420, 0.487]
+    # The kernel column is wide enough for the longest NPBench name at a legible size;
+    # PolyBench's names all fit well inside it.
+    xs = [0.0, 0.125, 0.245, 0.325, 0.443, 0.508]
     heads = ["kernel", "NumPy runtime", "Pluto", "DaCe auto_opt", "validated", "note / reason a cell is blank"]
     for x, h in zip(xs, heads):
         ax.text(x, 0.55, h, fontsize=7.8, fontweight="bold", va="center")
@@ -408,7 +425,11 @@ def page_details(rows, args):
         if i % 2 == 1:
             ax.add_patch(Rectangle((0, y - 0.48), 1, 0.96, facecolor="#f4f6f7", edgecolor="none", zorder=0))
         p, d = r["pluto"], r["dace"]
-        ax.text(xs[0], y, r["kernel"], fontsize=7.8, va="center", zorder=2)
+        # `scattering_self_energies` is 24 characters and overruns the NumPy column at 7.8pt.
+        # Scale only the names that would collide; every PolyBench name is short enough to be
+        # unaffected.
+        ksize = 7.8 if len(r["kernel"]) <= 19 else 7.8 * 19.0 / len(r["kernel"])
+        ax.text(xs[0], y, r["kernel"], fontsize=max(ksize, 5.9), va="center", zorder=2)
         ax.text(xs[1], y, runtime_text(r["numpy"]), fontsize=7.8, va="center", zorder=2)
 
         for x, e in ((xs[2], p), (xs[3], d)):
@@ -422,11 +443,14 @@ def page_details(rows, args):
         ax.text(xs[4], y, "yes" if both_ok else ("DaCe only" if d["status"] == "validated" else "no"),
                 fontsize=7.6, va="center", color="#2f7a3f" if both_ok else "#8a5a00", zorder=2)
 
-        note = ""
+        # Every column that did not validate gets its reason. Reporting only the first hides the
+        # informative one whenever both fail -- on a corpus where Pluto declines uniformly, the
+        # DaCe diagnostic is the entire content of the row.
+        parts = []
         for role, e in (("Pluto", p), ("DaCe", d)):
             if e["status"] != "validated":
-                note = "%s: %s" % (role, short_reason(e["status"], e.get("reason", "")))
-                break
+                parts.append("%s: %s" % (role, short_reason(e["status"], e.get("reason", ""))))
+        note = "  ".join(parts)
         # A validated row can still need a qualifier. Pluto tiles `durbin` and `ludcmp`
         # correctly but finds no parallelism in either -- both are inherently sequential
         # recurrences -- so their speedups are one-thread numbers standing beside 72-thread
@@ -689,6 +713,8 @@ def main():
     ap.add_argument("--run-label", default="",
                     help="how the run describes itself in the captions; defaults to run_kind(repeat)")
     ap.add_argument("--dace-column-label", default="DaCe\nauto_opt")
+    ap.add_argument("--categories", help="JSON [[label, [kernel, ...]], ...] replacing the "
+                                        "built-in PolyBench grouping")
     ap.add_argument("--title", default="NPBench PolyBench-derived kernels: Pluto vs DaCe auto_optimize")
     ap.add_argument("--subcaption", default="")
     args = ap.parse_args()

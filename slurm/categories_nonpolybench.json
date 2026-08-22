@@ -1,0 +1,63 @@
+[
+ [
+  "PolyBench family - no Pluto reference yet",
+  [
+   "cholesky2",
+   "covariance",
+   "covariance2",
+   "doitgen",
+   "gesummv",
+   "jacobi_1d",
+   "k2mm",
+   "k3mm",
+   "symm"
+  ]
+ ],
+ [
+  "deep learning",
+  [
+   "conv2d_bias",
+   "lenet",
+   "mlp",
+   "resnet",
+   "softmax"
+  ]
+ ],
+ [
+  "weather stencils",
+  [
+   "hdiff",
+   "vadv"
+  ]
+ ],
+ [
+  "physics / CFD",
+  [
+   "cavity_flow",
+   "channel_flow",
+   "contour_integral",
+   "nbody",
+   "scattering_self_energies"
+  ]
+ ],
+ [
+  "signal / integration",
+  [
+   "arc_distance",
+   "azimint_hist",
+   "azimint_naive",
+   "compute",
+   "stockham_fft"
+  ]
+ ],
+ [
+  "misc / non-affine",
+  [
+   "crc16",
+   "go_fast",
+   "mandelbrot1",
+   "mandelbrot2",
+   "spmv"
+  ]
+ ]
+]

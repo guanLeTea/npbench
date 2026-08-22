@@ -78,7 +78,13 @@ if [[ ! -s "${KERNELS_FILE}" ]]; then
     find "${REPO}/npbench/benchmarks/polybench" -name '*_pluto_reference.c' -printf '%f\n' \
         | sed 's/_pluto_reference\.c$//' | sort > "${KERNELS_FILE}"
 fi
-NK=$(wc -l < "${KERNELS_FILE}")
+# `KERNELS_FILE` is documented as overridable, but the rank loop, the classifier and the plot
+# all read ${NS}/kernels.txt by name. Copy an externally supplied list into the namespace so the
+# override actually takes effect instead of silently running zero kernels.
+if [[ ! "${KERNELS_FILE}" -ef "${NS}/kernels.txt" ]]; then
+    cp "${KERNELS_FILE}" "${NS}/kernels.txt" || exit 2
+fi
+NK=$(wc -l < "${NS}/kernels.txt")
 
 DACE_TREE="${DACE_TREE:-/users/levwidmer/dace}"
 {
