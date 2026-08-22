@@ -21,6 +21,6 @@
         },
         "input_args": ["neigh_idx", "dH", "G", "D", "Sigma"],
         "array_args": ["neigh_idx", "dH", "G", "D", "Sigma"],
-        "output_args": []
+        "output_args": ["Sigma"]
     }
 }
