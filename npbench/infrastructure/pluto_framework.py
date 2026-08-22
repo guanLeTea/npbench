@@ -33,6 +33,7 @@ import ctypes
 import importlib.util
 import os
 import pathlib
+import platform
 import re
 import resource
 import signal
@@ -108,8 +109,19 @@ CLANG_FLAGS: Tuple[str, ...] = (
     "-fno-signed-zeros",
     "-fstrict-aliasing",
     "-fPIC",
-    "-fveclib=libmvec",
 )
+
+#: ``-fveclib=libmvec`` lets clang vectorise calls to libm, and is kept where it works. It is
+#: NOT applied on aarch64: clang 17 emits the x86 mangling of glibc's vector-math entry points
+#: there. Measured on this system -- the generated object asks for `_ZGVbN2v_cos` and
+#: `_ZGVbN4v_expf` ("b" = SSE), while /lib64/libmvec.so.1 defines `_ZGVnN2v_cos`,
+#: `_ZGVnN4v_cos` and `_ZGVnN4v_expf` ("n" = Advanced SIMD). The names the compiler emits do
+#: not exist on the platform, so linking libmvec cannot satisfy them and dlopen fails with
+#: "undefined symbol" on every scop that calls a transcendental inside a vectorisable loop
+#: (arc_distance, mlp, softmax). Dropped by ARCHITECTURE rather than per kernel, because the
+#: mangling is a property of the target, not of any one scop.
+if platform.machine() not in ("aarch64", "arm64"):
+    CLANG_FLAGS = CLANG_FLAGS + ("-fveclib=libmvec", )
 
 #: pet extracts the scop with a flag-less libclang whose default aarch64 target carries
 #: no ``neon`` feature, so glibc's ``<bits/math-vector.h>`` -- pulled in by ``<math.h>``,

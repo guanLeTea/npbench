@@ -20,7 +20,10 @@
 #include <complex.h>
 #define DATA_TYPE double _Complex
 
-/* npbench-pluto-link: -llapacke */
+/* npbench-pluto-link: -lopenblas */
+/* The LAPACKE entry points below (zgetrf/zgetri/zgesv) are compiled into libopenblas in
+ * this toolchain, which ships no separate liblapacke; <lapacke.h> is its header. The
+ * routines and the calls are unchanged -- only the library that provides them is named. */
 
 /* LAPACK-backed dense solve, OUTSIDE the scop region, because that is where it is in the port
  * too: `np.linalg.inv` is LAPACK zgetrf + zgetri and `np.linalg.solve` is zgesv, and NumPy

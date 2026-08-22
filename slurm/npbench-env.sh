@@ -117,6 +117,26 @@ _npbench_env_main() {
             export DACE_compiler_linker_executable="$(command -v g++)"
         fi
 
+        # (5b) Header and library search paths for the uenv view, so a Pluto scop that calls a
+        #      numerical library finds it. `contour_integral`'s scop includes <lapacke.h>, which
+        #      lives in the view's include dir; the LAPACKE entry points it calls
+        #      (LAPACKE_zgetrf/zgetri/zgesv) are inside libopenblas -- this toolchain ships no
+        #      separate liblapacke. CPATH and LIBRARY_PATH are the standard clang/gcc search
+        #      variables, so this needs no compiler-flag change in the framework.
+        local _view="/user-environment/env/default"
+        if [ -d "${_view}/include" ]; then
+            case ":${CPATH:-}:" in
+                *":${_view}/include:"*) : ;;
+                *) export CPATH="${_view}/include${CPATH:+:${CPATH}}" ;;
+            esac
+        fi
+        if [ -d "${_view}/lib" ]; then
+            case ":${LIBRARY_PATH:-}:" in
+                *":${_view}/lib:"*) : ;;
+                *) export LIBRARY_PATH="${_view}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}" ;;
+            esac
+        fi
+
         # (6) Everything the numpy/dace/pluto columns need must resolve, or the job stops HERE by
         #     name rather than hundreds of kernels deep in a per-kernel build error.
         local tool missing=()
