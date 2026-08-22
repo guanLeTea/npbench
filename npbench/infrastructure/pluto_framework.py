@@ -30,9 +30,12 @@ Pipeline per benchmark, cached on mtime under :func:`build_root`:
 Requires ``polycc`` and ``clang`` on PATH; see ``slurm/npbench-env.sh``.
 """
 import ctypes
+import importlib.util
 import os
 import pathlib
 import re
+import resource
+import signal
 import shutil
 import subprocess
 import tempfile
@@ -231,7 +234,6 @@ SEMANTIC_DIVERGENCE: Dict[str, str] = {
     # it is what keeps a future port drift from quietly becoming a Pluto "result".
 }
 
-
 #: Benchmarks where polycc's output is CORRECT SEQUENTIALLY but its OpenMP parallelization is
 #: unsound -- Pluto marked a loop parallel that carries a dependence.
 #:
@@ -330,6 +332,20 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
     },
             outputs=[("table", np.int32, lambda a: (a["N"], a["N"]), _zeros(np.int32))],
             returns=["table"]),
+    # The port returns cov and subtracts the column means from `data` in place, exactly as the
+    # scop does. `mean` is PolyBench's own scratch parameter. covariance2 computes the same
+    # thing through np.cov(data.T): float_n is initialized to N in both ports, so np.cov's
+    # (N-1) denominator and its mean over N agree with the scop term for term.
+    "covariance":
+    Adapter(outputs=[("cov", np.float64, lambda a: (a["M"], a["M"]), _zeros(np.float64)),
+                     # scratch: PolyBench's own kernel_covariance takes mean as a parameter
+                     ("mean", np.float64, lambda a: (a["M"], ), _zeros(np.float64))],
+            returns=["cov"]),
+    "covariance2":
+    Adapter(outputs=[("cov", np.float64, lambda a: (a["M"], a["M"]), _zeros(np.float64)),
+                     # scratch: PolyBench's own kernel_covariance takes mean as a parameter
+                     ("mean", np.float64, lambda a: (a["M"], ), _zeros(np.float64))],
+            returns=["cov"]),
     # The port allocates x and y as zeros_like(b) and returns both; A it modifies in place,
     # which is already NPBench's `output_args`. The scop writes x and y through pointers.
     "ludcmp":
@@ -395,11 +411,32 @@ PLUTO_ADAPTERS: Dict[str, Adapter] = {
 #: from its own declaration rather than assumed.
 _PROTO = re.compile(r"void\s+(\w+)_fp64\s*\((.*?)\)\s*\{", re.S)
 
-#: C element type -> (numpy dtype, ctypes type). The closed set the tracked scops use.
+class _Complex128(ctypes.Structure):
+    """Storage layout of one complex128 element: two contiguous doubles."""
+    _fields_ = [("re", ctypes.c_double), ("im", ctypes.c_double)]
+
+
+#: C element type -> (numpy dtype, ctypes type). The closed set the tracked scops use; extended
+#: only when a PORT's own dtype requires it, never to make a conversion possible.
 #: Anything else is declined rather than guessed at: a positional ctypes call cannot
 #: detect a wrong element width, it just returns different numbers.
 _ELEM_TYPES: Dict[str, Tuple[Any, Any]] = {
     "double": (np.float64, ctypes.c_double),
+    # `uint8_t` is here because a kernel genuinely has one: crc16's `data` is np.uint8, and the
+    # framework compares the passed array's dtype to the declared C type EXACTLY (a converted
+    # copy would not receive the scop's writes), so declaring the byte buffer as int32_t is
+    # refused rather than silently reinterpreted. Added as a type the scop can name, not as a
+    # conversion: uint8 in the port stays uint8 in C.
+    "uint8_t": (np.uint8, ctypes.c_uint8),
+    # Same reason: spmv's CSR index arrays are np.uint32 (`spmv.py` initialize() casts them
+    # with `np.uint32(matrix.indptr)`), so the scop must be able to name that width too.
+    "uint32_t": (np.uint32, ctypes.c_uint32),
+    # complex128 in the port, `double _Complex` in the scop. Matched before `double` by the
+    # longest-first rule below. ctypes has no complex type before 3.14, and this is a STORAGE
+    # description only -- every complex parameter is an array, marshalled as a pointer to the
+    # numpy buffer, so what matters is that the element is two contiguous doubles. Nothing is
+    # split into re/im: the port returns complex arrays and so does this column.
+    "double _Complex": (np.complex128, _Complex128),
     "float": (np.float32, ctypes.c_float),
     "int32_t": (np.int32, ctypes.c_int32),
     "int64_t": (np.int64, ctypes.c_int64),
@@ -455,6 +492,36 @@ def reference_source(bench: Benchmark) -> pathlib.Path:
             (bench.info["module_name"] + _REFERENCE_SUFFIX))
 
 
+#: Suffix of a per-kernel adapter module, tracked beside its scop.
+_ADAPTER_SUFFIX = "_pluto_adapter.py"
+
+
+def local_adapter(bench: Benchmark) -> Tuple[Any, Dict[str, Callable]]:
+    """``(Adapter, arg_overrides)`` from ``<module>_pluto_adapter.py`` beside the scop.
+
+    The 23 PolyBench kernels this column started from keep their adapters in
+    :data:`PLUTO_ADAPTERS` above, where they can be read against each other. Everything added
+    since carries its adapter in a sidecar module next to its own ``_pluto_reference.c``, for
+    the same reason the scop is tracked there: the two are one artifact, they are written and
+    reviewed together, and a per-kernel file cannot be broken by an edit to another kernel.
+
+    The module must define ``ADAPTER``; ``ARG_OVERRIDES`` is optional and has the same meaning
+    as an entry of the module-level table.
+    """
+    parent = pathlib.Path(__file__).parent.parent.parent.absolute()
+    path = (parent / "npbench" / "benchmarks" / bench.info["relative_path"] /
+            (bench.info["module_name"] + _ADAPTER_SUFFIX))
+    if not path.is_file():
+        return None, {}
+    spec = importlib.util.spec_from_file_location("npbench_pluto_adapter_{b}".format(b=bench.bname), path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    members = vars(module)
+    if "ADAPTER" not in members:
+        raise PlutoUnavailable("{p} defines no ADAPTER".format(p=path.name))
+    return members["ADAPTER"], members.get("ARG_OVERRIDES", {})
+
+
 def parse_prototype(text: str) -> Tuple[str, List[Tuple[str, str, List[str]]]]:
     """``(base, params)`` for the scop's exported symbol.
 
@@ -505,11 +572,39 @@ def parse_prototype(text: str) -> Tuple[str, List[Tuple[str, str, List[str]]]]:
     return base, params
 
 
+#: Address-space ceiling on one ``polycc`` run, in bytes. Pluto's scheduler can allocate without
+#: bound on a scop it cannot handle -- the same failure mode as the timeout below, seen from the
+#: other side -- and on a workstation that means the OOM killer picks a victim, which may well be
+#: another benchmark rather than polycc. Capped per subprocess instead, so the failure lands on
+#: the kernel that caused it: malloc fails, polycc exits non-zero, and the benchmark declines with
+#: polycc's own message. Override with ``NPBENCH_PLUTO_MEM_GB``; 0 disables the cap.
+_MEM_GB = float(os.environ.get("NPBENCH_PLUTO_MEM_GB", "6"))
+POLYCC_ADDRESS_SPACE_LIMIT = int(_MEM_GB * (1 << 30)) if _MEM_GB > 0 else 0
+
+
+def _limit_polycc_memory() -> None:
+    """Apply :data:`POLYCC_ADDRESS_SPACE_LIMIT` to the calling process (a forked child)."""
+    if not POLYCC_ADDRESS_SPACE_LIMIT:
+        return
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    ceiling = POLYCC_ADDRESS_SPACE_LIMIT if hard == resource.RLIM_INFINITY else min(
+        POLYCC_ADDRESS_SPACE_LIMIT, hard)
+    resource.setrlimit(resource.RLIMIT_AS, (ceiling, hard))
+
+
 #: Wall-clock ceiling on one ``polycc`` run, and on the clang compile of its output. Generous
 #: relative to a healthy transform (~1.5s for gemm), and there purely to bound the pathological
 #: case: a Pluto that has corrupted its heap does not always exit.
-POLYCC_TIMEOUT = 300
-CLANG_TIMEOUT = 300
+#: Raised from 300s for the same reason as CLANG_TIMEOUT below: `lenet`'s scop is two conv nests
+#: plus three dense layers in one region, and Pluto's own scheduling of it runs past five minutes
+#: while still making progress. Memory, not time, is what bounds a runaway Pluto here -- the
+#: RLIMIT_AS cap above kills a heap-corrupted run long before this ceiling is reached.
+POLYCC_TIMEOUT = int(os.environ.get("NPBENCH_PLUTO_POLYCC_TIMEOUT", "3600"))
+#: Raised from 300s on measurement: the NHWC conv2d nest in `conv2d_bias` and `lenet` tiles into
+#: a ~300,000-line translation unit, and clang -O3 -march=native on it runs well past ten minutes.
+#: That is a build cost of a legitimate transform, not a pathology, and the old ceiling turned it
+#: into a decline. Still bounded, because a Pluto that has corrupted its heap does not always exit.
+CLANG_TIMEOUT = int(os.environ.get("NPBENCH_PLUTO_CLANG_TIMEOUT", "3600"))
 
 #: Largest value a C `long long` can hold. Pluto's scheduler can produce rational coefficients
 #: whose denominators blow up, and it prints them into the emitted loop bounds verbatim.
@@ -721,8 +816,16 @@ def _assigned_names(text: str) -> set:
 
 
 def _scop_region(text: str) -> str:
-    """The ``#pragma scop`` ... ``#pragma endscop`` body, or the whole text if unmarked."""
-    m = re.search(r"#pragma\s+scop(.*?)#pragma\s+endscop", text, re.S)
+    """The ``#pragma scop`` ... ``#pragma endscop`` body, or the whole text if unmarked.
+
+    Both pragmas are anchored to the start of a line. Without that anchor the scan also matches
+    the words inside a block comment -- a scop whose header comment explains where its
+    ``#pragma scop`` sits (``channel_flow``) opened the region at the COMMENT, so statements
+    between the comment and the real pragma were read as scop statements. They are absent from
+    polycc's output for the ordinary reason that polycc only rewrites the scop, and
+    :func:`_dropped_writes` then reported them as dropped and declined a correct kernel.
+    """
+    m = re.search(r"^[ \t]*#pragma\s+scop\b(.*?)^[ \t]*#pragma\s+endscop", text, re.S | re.M)
     return m.group(1) if m else text
 
 
@@ -773,21 +876,33 @@ def run_polycc(reference: pathlib.Path, out: pathlib.Path) -> None:
     with tempfile.TemporaryDirectory(prefix="npbench-polycc-", dir=str(out.parent)) as tmp:
         scratch = pathlib.Path(tmp)
         tmp_out = scratch / out.name
+        # Own session, so the timeout below can kill the WHOLE tree. `polycc` is a bash wrapper
+        # that execs the `pluto` binary as a child; `subprocess.run(timeout=...)` kills only the
+        # direct child, and a measured lenet timeout left an orphaned `pluto` at 100% CPU for
+        # 17 minutes afterwards. Killing the process group is what actually stops it.
+        popen = subprocess.Popen([exe, *POLYCC_ARGS, str(reference), "-o", str(tmp_out)],
+                                 cwd=scratch,
+                                 env=_pet_env(scratch),
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 text=True,
+                                 start_new_session=True,
+                                 preexec_fn=_limit_polycc_memory)
         try:
-            proc = subprocess.run([exe, *POLYCC_ARGS, str(reference), "-o", str(tmp_out)],
-                                  cwd=scratch,
-                                  env=_pet_env(scratch),
-                                  capture_output=True,
-                                  text=True,
-                                  timeout=POLYCC_TIMEOUT)
+            stdout, stderr = popen.communicate(timeout=POLYCC_TIMEOUT)
         except subprocess.TimeoutExpired:
             # Pluto can corrupt its own heap and then spin rather than exit (`nussinov`:
             # "double free or corruption (out)"). Unbounded, that consumes the rest of a
             # campaign's allocation on one kernel it was never going to transform.
+            try:
+                os.killpg(popen.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            popen.wait()
             raise PlutoUnavailable("polycc did not finish within {t}s on {r}".format(t=POLYCC_TIMEOUT,
                                                                                      r=reference.name))
-        if proc.returncode != 0 or not tmp_out.is_file():
-            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-15:]
+        if popen.returncode != 0 or not tmp_out.is_file():
+            tail = (stderr or stdout or "").strip().splitlines()[-15:]
             raise PlutoUnavailable("polycc failed on {r}:\n{t}".format(r=reference.name, t="\n".join(tail)))
         text = tmp_out.read_text()
         if "#pragma omp parallel for" not in text:
@@ -826,7 +941,24 @@ def run_polycc(reference: pathlib.Path, out: pathlib.Path) -> None:
         os.replace(str(tmp_out), str(out))
 
 
-def compile_shared(source: pathlib.Path, so: pathlib.Path, openmp: bool = True) -> None:
+#: A scop may name libraries its own (outside-the-scop) code needs, with a directive line
+#: ``/* npbench-pluto-link: -llapacke -lblas */`` anywhere in the reference file. Only for a
+#: kernel whose PORT calls the same library: `contour_integral`'s middle step is
+#: ``np.linalg.inv`` / ``np.linalg.solve``, i.e. LAPACK, and no loop nest in the port implements
+#: it. Linking the same LAPACK keeps the computation the one NPBench validates, instead of
+#: substituting a hand-written elimination with different pivoting.
+_LINK_DIRECTIVE = re.compile(r"npbench-pluto-link:([^*\n]*)")
+
+
+def link_libraries(source_text: str) -> Tuple[str, ...]:
+    """Extra linker arguments a scop declares, in file order."""
+    return tuple(tok for m in _LINK_DIRECTIVE.finditer(source_text) for tok in m.group(1).split())
+
+
+def compile_shared(source: pathlib.Path,
+                   so: pathlib.Path,
+                   openmp: bool = True,
+                   libs: Sequence[str] = ()) -> None:
     """Compile polycc's output into ``so``, or raise.
 
     ``openmp=False`` drops ``-fopenmp`` so the ``#pragma omp parallel for`` polycc emitted is
@@ -840,7 +972,7 @@ def compile_shared(source: pathlib.Path, so: pathlib.Path, openmp: bool = True) 
         raise PlutoUnavailable("clang is not on PATH (source slurm/npbench-env.sh)")
     tmp_so = so.with_suffix(so.suffix + ".tmp")
     flags = CLANG_FLAGS if openmp else tuple(f for f in CLANG_FLAGS if f != "-fopenmp")
-    cmd = [exe, *flags, "-shared", "-o", str(tmp_so), str(source), "-lm"]
+    cmd = [exe, *flags, "-shared", "-o", str(tmp_so), str(source), "-lm", *libs]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CLANG_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -909,7 +1041,12 @@ class PlutoFramework(Framework):
         # that the rewrite preserves semantics.
         source_text, lifted = (lift_scop_locals(reference.read_text()) if _LIFT_LOCALS else
                                (reference.read_text(), {}))
-        base, params = parse_prototype(source_text)
+        # Named off the FILE, not off the prototype, so the paths below exist before anything
+        # this module parses. `parse_prototype` runs after polycc deliberately: it is what
+        # rejects an element type this column cannot marshal, and running it first would make
+        # OUR table gap the recorded verdict for a kernel Pluto would have refused on its own
+        # terms. polycc goes first so the message on file is Pluto's.
+        base = reference.name[:-len("_pluto_reference.c")]
         root = build_root() / bench.bname
         root.mkdir(parents=True, exist_ok=True)
         transformed = root / "{b}_pluto.c".format(b=base)
@@ -925,8 +1062,15 @@ class PlutoFramework(Framework):
 
         if _stale(transformed, source):
             run_polycc(source, transformed)
+
+        # Pluto has spoken by here. Only now is the signature bound to ctypes.
+        parsed_base, params = parse_prototype(source_text)
+        if parsed_base != base:
+            raise PlutoUnavailable("{r} declares {p}_fp64, expected {b}_fp64".format(r=reference.name,
+                                                                                     p=parsed_base,
+                                                                                     b=base))
         if _stale(so, transformed):
-            compile_shared(transformed, so, openmp=not racy)
+            compile_shared(transformed, so, openmp=not racy, libs=link_libraries(source_text))
         if racy:
             print("PlutoSequential: {b}: polycc's transformation is correct but its `omp parallel "
                   "for` is not, so the unmodified transform is compiled without -fopenmp and runs "
@@ -950,8 +1094,9 @@ class PlutoFramework(Framework):
         fn.restype = None
 
         input_args = list(bench.info["input_args"])
-        overrides = ARG_OVERRIDES.get(bench.bname, {})
-        adapter = PLUTO_ADAPTERS.get(bench.bname, Adapter())
+        sidecar, sidecar_overrides = local_adapter(bench)
+        overrides = ARG_OVERRIDES.get(bench.bname) or sidecar_overrides
+        adapter = PLUTO_ADAPTERS.get(bench.bname) or sidecar or Adapter()
 
         # A benchmark whose port RETURNS its result and whose `output_args` is empty has nothing
         # for `Test` to compare in place. Since `utilities.validate` zips the reference and the

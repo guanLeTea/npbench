@@ -131,3 +131,9 @@ dmypy.json
 # dace
 .dacecache/
 *.csv
+
+# pluto column build cache (transformed sources + shared objects)
+.pluto_build/
+
+# npbench results database
+npbench.db
