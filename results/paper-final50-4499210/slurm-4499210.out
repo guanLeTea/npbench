@@ -1,0 +1,230 @@
+npbench-env: ready
+  repo        /users/levwidmer/npbench
+  python      Python 3.14.3
+  numpy       2.5.2
+  dace        2.0.0a5 /users/levwidmer/dace/dace/__init__.py
+  dace branch extended
+  gcc/g++     14.3.0 / 14.3.0
+  cmake       cmake version 3.31.11
+  clang       clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)
+  polycc      /capstor/scratch/cscs/levwidmer/opt/pluto/bin/polycc
+  dace c++    /user-environment/env/default/bin/g++
+=== npbench m-verify: 23 kernels x [numpy pluto dace_cpu_autoopt] preset=paper repeat=50 ===
+=== namespace=/users/levwidmer/npbench/results/paper-final50-4499210
+=== node=nid005315 ranks=4 cpus-per-task=72
+=== npbench=7f49c1a dace=extended@eb7b1352a
+=== start 19:51:56
+{
+  "campaign": "paper-final50", "job": "4499210",
+  "purpose": "preset-paper performance campaign at REPEAT=50; medians over 50 repetitions, every reported timing from a validated run",
+  "date": "2026-08-17T19:51:49+02:00", "node": "nid005315",
+  "preset": "paper", "repeat": 50, "timeout_s": 600,
+  "kernels": 23, "frameworks": "numpy pluto dace_cpu_autoopt",
+  "ranks": 4, "cpus_per_task": 72,
+  "npbench_commit": "7f49c1ae764a2c986a063cc3c60b203b58d4bd94",
+  "npbench_branch": "bench/daint-pluto",
+  "npbench_dirty_files": 0,
+  "dace_tree": "/users/levwidmer/dace",
+  "dace_branch": "extended",
+  "dace_commit": "eb7b1352a09298451eb8c65b937d0c102dc2cfae",
+  "dace_dirty_files": 0,
+  "python": "Python 3.14.3",
+  "numpy": "2.5.2",
+  "dace": "2.0.0a5",
+  "gcc": "14.3.0",
+  "clang": "clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)",
+  "polycc": "PLUTO version 0.12.0-33-gdc46216 - An automatic parallelizer and locality optimizer",
+  "uenv": "/user-environment:prgenv-gnu:default"
+}
+[rank 0] cpus=0-71 threads=72 6 kernels: adi correlation floyd_warshall heat_3d mvt syrk
+[rank 3] cpus=216-287 threads=72 5 kernels: cholesky fdtd_2d gramschmidt ludcmp syr2k
+[rank 0] BEGIN numpy adi 19:51:57
+[rank 3] BEGIN numpy cholesky 19:51:57
+[rank 1] cpus=72-143 threads=72 6 kernels: atax deriche gemm jacobi_2d nussinov trisolv
+[rank 1] BEGIN numpy atax 19:51:57
+[rank 2] cpus=144-215 threads=72 6 kernels: bicg durbin gemver lu seidel_2d trmm
+[rank 2] BEGIN numpy bicg 19:51:57
+[rank 1] END   numpy atax rc=0 19:52:19
+[rank 1] BEGIN pluto atax 19:52:19
+[rank 2] END   numpy bicg rc=0 19:52:20
+[rank 2] BEGIN pluto bicg 19:52:20
+[rank 0] END   numpy adi rc=0 19:52:21
+[rank 0] BEGIN pluto adi 19:52:21
+[rank 0] END   pluto adi rc=1 19:52:22
+[rank 0] BEGIN dace_cpu_autoopt adi 19:52:22
+[rank 1] END   pluto atax rc=0 19:52:43
+[rank 1] BEGIN dace_cpu_autoopt atax 19:52:43
+[rank 2] END   pluto bicg rc=0 19:52:43
+[rank 2] BEGIN dace_cpu_autoopt bicg 19:52:43
+[rank 1] END   dace_cpu_autoopt atax rc=0 19:53:12
+[rank 1] BEGIN numpy deriche 19:53:12
+[rank 2] END   dace_cpu_autoopt bicg rc=0 19:53:12
+[rank 2] BEGIN numpy durbin 19:53:12
+[rank 2] END   numpy durbin rc=0 19:53:31
+[rank 2] BEGIN pluto durbin 19:53:31
+[rank 2] END   pluto durbin rc=0 19:53:42
+[rank 2] BEGIN dace_cpu_autoopt durbin 19:53:42
+[rank 1] END   numpy deriche rc=0 19:54:16
+[rank 1] BEGIN pluto deriche 19:54:16
+[rank 2] END   dace_cpu_autoopt durbin rc=0 19:54:17
+[rank 2] BEGIN numpy gemver 19:54:17
+[rank 0] END   dace_cpu_autoopt adi rc=0 19:54:18
+[rank 0] BEGIN numpy correlation 19:54:18
+[rank 3] END   numpy cholesky rc=0 19:54:19
+[rank 3] BEGIN pluto cholesky 19:54:19
+[rank 0] END   numpy correlation rc=0 19:54:23
+[rank 0] BEGIN pluto correlation 19:54:23
+[rank 0] END   pluto correlation rc=0 19:54:27
+[rank 0] BEGIN dace_cpu_autoopt correlation 19:54:27
+[rank 3] END   pluto cholesky rc=0 19:54:31
+[rank 3] BEGIN dace_cpu_autoopt cholesky 19:54:31
+[rank 2] END   numpy gemver rc=0 19:54:32
+[rank 2] BEGIN pluto gemver 19:54:32
+[rank 0] END   dace_cpu_autoopt correlation rc=0 19:54:40
+[rank 0] BEGIN numpy floyd_warshall 19:54:40
+[rank 2] END   pluto gemver rc=0 19:54:40
+[rank 2] BEGIN dace_cpu_autoopt gemver 19:54:40
+[rank 2] END   dace_cpu_autoopt gemver rc=0 19:54:52
+[rank 2] BEGIN numpy lu 19:54:52
+[rank 1] END   pluto deriche rc=0 19:54:52
+[rank 1] BEGIN dace_cpu_autoopt deriche 19:54:52
+[rank 3] END   dace_cpu_autoopt cholesky rc=0 19:55:02
+[rank 3] BEGIN numpy fdtd_2d 19:55:02
+[rank 1] END   dace_cpu_autoopt deriche rc=0 19:55:36
+[rank 1] BEGIN numpy gemm 19:55:36
+[rank 1] END   numpy gemm rc=0 19:55:41
+[rank 1] BEGIN pluto gemm 19:55:41
+[rank 1] END   pluto gemm rc=0 19:55:52
+[rank 1] BEGIN dace_cpu_autoopt gemm 19:55:52
+[rank 1] END   dace_cpu_autoopt gemm rc=0 19:56:03
+[rank 1] BEGIN numpy jacobi_2d 19:56:03
+[rank 3] END   numpy fdtd_2d rc=0 19:57:05
+[rank 3] BEGIN pluto fdtd_2d 19:57:05
+[rank 3] END   pluto fdtd_2d rc=0 19:57:19
+[rank 3] BEGIN dace_cpu_autoopt fdtd_2d 19:57:19
+[rank 3] END   dace_cpu_autoopt fdtd_2d rc=0 19:57:36
+[rank 3] BEGIN numpy gramschmidt 19:57:36
+[rank 3] END   numpy gramschmidt rc=0 19:57:44
+[rank 3] BEGIN pluto gramschmidt 19:57:44
+[rank 3] END   pluto gramschmidt rc=0 19:57:50
+[rank 3] BEGIN dace_cpu_autoopt gramschmidt 19:57:50
+[rank 3] END   dace_cpu_autoopt gramschmidt rc=0 19:58:10
+[rank 3] BEGIN numpy ludcmp 19:58:10
+[rank 2] END   numpy lu rc=0 20:01:49
+[rank 2] BEGIN pluto lu 20:01:49
+[rank 2] END   pluto lu rc=0 20:02:13
+[rank 2] BEGIN dace_cpu_autoopt lu 20:02:13
+[rank 2] END   dace_cpu_autoopt lu rc=0 20:04:30
+[rank 2] BEGIN numpy seidel_2d 20:04:30
+[rank 3] END   numpy ludcmp rc=0 20:05:17
+[rank 3] BEGIN pluto ludcmp 20:05:17
+[rank 0] END   numpy floyd_warshall rc=0 20:07:12
+[rank 0] BEGIN pluto floyd_warshall 20:07:12
+[rank 3] END   pluto ludcmp rc=0 20:07:39
+[rank 3] BEGIN dace_cpu_autoopt ludcmp 20:07:39
+[rank 0] END   pluto floyd_warshall rc=0 20:09:39
+[rank 0] BEGIN dace_cpu_autoopt floyd_warshall 20:09:39
+[rank 2] END   numpy seidel_2d rc=0 20:09:46
+[rank 2] BEGIN pluto seidel_2d 20:09:46
+[rank 3] END   dace_cpu_autoopt ludcmp rc=0 20:09:58
+[rank 3] BEGIN numpy syr2k 20:09:58
+[rank 2] END   pluto seidel_2d rc=0 20:10:04
+[rank 2] BEGIN dace_cpu_autoopt seidel_2d 20:10:04
+[rank 2] END   dace_cpu_autoopt seidel_2d rc=0 20:11:08
+[rank 2] BEGIN numpy trmm 20:11:08
+[rank 2] END   numpy trmm rc=0 20:12:45
+[rank 2] BEGIN pluto trmm 20:12:45
+[rank 2] END   pluto trmm rc=0 20:12:55
+[rank 2] BEGIN dace_cpu_autoopt trmm 20:12:55
+[rank 2] END   dace_cpu_autoopt trmm rc=0 20:13:10
+[rank 0] END   dace_cpu_autoopt floyd_warshall rc=0 20:15:19
+[rank 0] BEGIN numpy heat_3d 20:15:19
+[rank 3] END   numpy syr2k rc=0 20:16:04
+[rank 3] BEGIN pluto syr2k 20:16:04
+[rank 3] END   pluto syr2k rc=0 20:16:22
+[rank 3] BEGIN dace_cpu_autoopt syr2k 20:16:22
+[rank 3] END   dace_cpu_autoopt syr2k rc=0 20:16:48
+[rank 0] END   numpy heat_3d rc=0 20:24:25
+[rank 0] BEGIN pluto heat_3d 20:24:25
+[rank 0] END   pluto heat_3d rc=0 20:25:50
+[rank 0] BEGIN dace_cpu_autoopt heat_3d 20:25:50
+[rank 0] END   dace_cpu_autoopt heat_3d rc=0 20:26:25
+[rank 0] BEGIN numpy mvt 20:26:25
+[rank 0] END   numpy mvt rc=0 20:26:41
+[rank 0] BEGIN pluto mvt 20:26:41
+[rank 0] END   pluto mvt rc=0 20:26:57
+[rank 0] BEGIN dace_cpu_autoopt mvt 20:26:57
+[rank 0] END   dace_cpu_autoopt mvt rc=0 20:27:18
+[rank 0] BEGIN numpy syrk 20:27:18
+[rank 0] END   numpy syrk rc=0 20:29:53
+[rank 0] BEGIN pluto syrk 20:29:53
+[rank 0] END   pluto syrk rc=0 20:30:03
+[rank 0] BEGIN dace_cpu_autoopt syrk 20:30:03
+[rank 0] END   dace_cpu_autoopt syrk rc=0 20:30:18
+[rank 1] END   numpy jacobi_2d rc=0 20:40:58
+[rank 1] BEGIN pluto jacobi_2d 20:40:58
+[rank 1] END   pluto jacobi_2d rc=0 20:43:04
+[rank 1] BEGIN dace_cpu_autoopt jacobi_2d 20:43:04
+[rank 1] END   dace_cpu_autoopt jacobi_2d rc=0 20:45:09
+[rank 1] BEGIN numpy nussinov 20:45:09
+[rank 1] END   numpy nussinov rc=0 20:51:30
+[rank 1] BEGIN pluto nussinov 20:51:30
+[rank 1] END   pluto nussinov rc=0 20:51:50
+[rank 1] BEGIN dace_cpu_autoopt nussinov 20:51:50
+[rank 1] END   dace_cpu_autoopt nussinov rc=0 20:52:15
+[rank 1] BEGIN numpy trisolv 20:52:15
+[rank 1] END   numpy trisolv rc=0 20:52:35
+[rank 1] BEGIN pluto trisolv 20:52:35
+[rank 1] END   pluto trisolv rc=0 20:52:51
+[rank 1] BEGIN dace_cpu_autoopt trisolv 20:52:51
+[rank 1] END   dace_cpu_autoopt trisolv rc=0 20:53:17
+=== srun rc=0 ===
+
+=== merging per-rank databases ===
+merged 3469 rows from 4 shard(s) into /users/levwidmer/npbench/results/paper-final50-4499210/npbench.db
+
+=== classifying every (kernel, framework) pair ===
+preset paper -- 23 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               23         0         0       0        0
+pluto               22         0         1       0        0
+dace_cpu_autoopt        23         0         0       0        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  durbin           pluto
+  ludcmp           pluto
+  nussinov         pluto
+
+NOT VALIDATED -- every one, with its reason:
+  adi              pluto      declined  polycc failed on adi_pluto_reference.c: [Clan] Error: syntax error at line 33, column 39. Error extracting polyhedra from source file: '/users/levwidm
+preset paper -- 23 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               23         0         0       0        0
+pluto               22         0         1       0        0
+dace_cpu_autoopt        23         0         0       0        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  durbin           pluto
+  ludcmp           pluto
+  nussinov         pluto
+
+NOT VALIDATED -- every one, with its reason:
+  adi              pluto      declined  polycc failed on adi_pluto_reference.c: [Clan] Error: syntax error at line 33, column 39. Error extracting polyhedra from source file: '/users/levwidm
+
+=== plot ===
+wrote /users/levwidmer/npbench/results/paper-final50-4499210/m-verify-4499210.pdf
+
+================================================================
+  DIR      : /users/levwidmer/npbench/results/paper-final50-4499210
+  DB       : /users/levwidmer/npbench/results/paper-final50-4499210/npbench.db
+  MANIFEST : /users/levwidmer/npbench/results/paper-final50-4499210/manifest.json
+  STATUS   : /users/levwidmer/npbench/results/paper-final50-4499210/status.json
+  SUMMARY  : /users/levwidmer/npbench/results/paper-final50-4499210/summary.txt
+  PLOT     : /users/levwidmer/npbench/results/paper-final50-4499210/m-verify-4499210.pdf
+  LOG      : /users/levwidmer/npbench/results/paper-final50-4499210/slurm-4499210.out
+================================================================
+=== finish 20:53:22

@@ -1,0 +1,22 @@
+{
+  "campaign": "nonpoly-dace50", "job": "4525319",
+  "purpose": "preset-paper performance campaign at REPEAT=50; medians over 50 repetitions, every reported timing from a validated run",
+  "date": "2026-08-23T15:50:24+02:00", "node": "nid005409",
+  "preset": "paper", "repeat": 50, "timeout_s": 900,
+  "kernels": 31, "frameworks": "dace_cpu_autoopt",
+  "ranks": 4, "cpus_per_task": 72,
+  "npbench_commit": "d19133b440a33ff92aa1ccb6adfabccc94d8ff21",
+  "npbench_branch": "bench/daint-pluto-nonpoly",
+  "npbench_dirty_files": 2,
+  "dace_tree": "/users/levwidmer/dace",
+  "dace_branch": "HEAD",
+  "dace_commit": "b27aaed2f8456674e29c57a0a6115643bb2ae4c2",
+  "dace_dirty_files": 0,
+  "python": "Python 3.14.3",
+  "numpy": "2.5.2",
+  "dace": "2.0.0a6",
+  "gcc": "14.3.0",
+  "clang": "clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)",
+  "polycc": "PLUTO version 0.12.0-33-gdc46216 - An automatic parallelizer and locality optimizer",
+  "uenv": "/user-environment:prgenv-gnu:default"
+}

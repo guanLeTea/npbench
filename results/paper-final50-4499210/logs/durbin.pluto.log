@@ -1,0 +1,9 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing Pluto with durbin on the paper dataset *****
+NumPy - default - validation: 302ms
+PlutoSequential: durbin_pluto_reference.c: polycc marked no loop parallel; the transformed code is tiled but single-threaded, so this row is not comparable to the parallel ones
+Pluto - pluto - first/validation: 123ms
+Pluto - pluto - pluto - validation: SUCCESS
+Pluto - pluto - median: 122ms

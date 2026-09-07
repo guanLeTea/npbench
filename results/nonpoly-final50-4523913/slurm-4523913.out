@@ -1,0 +1,395 @@
+npbench-env: ready
+  repo        /users/levwidmer/npbench
+  python      Python 3.14.3
+  numpy       2.5.2
+  dace        2.0.0a5 /users/levwidmer/dace/dace/__init__.py
+  dace branch extended
+  gcc/g++     14.3.0 / 14.3.0
+  cmake       cmake version 3.31.11
+  clang       clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)
+  polycc      /capstor/scratch/cscs/levwidmer/opt/pluto/bin/polycc
+  dace c++    /user-environment/env/default/bin/g++
+=== npbench m-verify: 31 kernels x [numpy pluto dace_cpu_autoopt] preset=paper repeat=50 ===
+=== namespace=/users/levwidmer/npbench/results/nonpoly-final50-4523913
+=== node=nid005334 ranks=4 cpus-per-task=72
+=== npbench=d86cc06 dace=extended@eb7b1352a
+=== start 00:06:21
+{
+  "campaign": "nonpoly-final50", "job": "4523913",
+  "purpose": "preset-paper performance campaign at REPEAT=50; medians over 50 repetitions, every reported timing from a validated run",
+  "date": "2026-08-23T00:06:15+02:00", "node": "nid005334",
+  "preset": "paper", "repeat": 50, "timeout_s": 900,
+  "kernels": 31, "frameworks": "numpy pluto dace_cpu_autoopt",
+  "ranks": 4, "cpus_per_task": 72,
+  "npbench_commit": "d86cc06b2352d9edf23a7b7eb1a3d5e8cd5c3a97",
+  "npbench_branch": "bench/daint-pluto-nonpoly",
+  "npbench_dirty_files": 1,
+  "dace_tree": "/users/levwidmer/dace",
+  "dace_branch": "extended",
+  "dace_commit": "eb7b1352a09298451eb8c65b937d0c102dc2cfae",
+  "dace_dirty_files": 0,
+  "python": "Python 3.14.3",
+  "numpy": "2.5.2",
+  "dace": "2.0.0a5",
+  "gcc": "14.3.0",
+  "clang": "clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)",
+  "polycc": "PLUTO version 0.12.0-33-gdc46216 - An automatic parallelizer and locality optimizer",
+  "uenv": "/user-environment:prgenv-gnu:default"
+}
+[rank 1] cpus=72-143 threads=72 8 kernels: azimint_hist cholesky2 covariance gesummv k2mm mandelbrot2 scattering_self_energies symm
+[rank 3] cpus=216-287 threads=72 7 kernels: cavity_flow contour_integral crc16 hdiff lenet nbody spmv
+[rank 2] cpus=144-215 threads=72 8 kernels: azimint_naive compute covariance2 go_fast k3mm mlp softmax vadv
+[rank 0] cpus=0-71 threads=72 8 kernels: arc_distance channel_flow conv2d_bias doitgen jacobi_1d mandelbrot1 resnet stockham_fft
+[rank 1] BEGIN numpy azimint_hist 00:06:22
+[rank 2] BEGIN numpy azimint_naive 00:06:22
+[rank 3] BEGIN numpy cavity_flow 00:06:22
+[rank 0] BEGIN numpy arc_distance 00:06:22
+[rank 1] END   numpy azimint_hist rc=0 00:06:27
+[rank 1] BEGIN pluto azimint_hist 00:06:27
+[rank 1] END   pluto azimint_hist rc=1 00:06:28
+[rank 1] BEGIN dace_cpu_autoopt azimint_hist 00:06:28
+[rank 1] END   dace_cpu_autoopt azimint_hist rc=0 00:06:44
+[rank 1] BEGIN numpy cholesky2 00:06:44
+[rank 1] END   numpy cholesky2 rc=0 00:06:48
+[rank 1] BEGIN pluto cholesky2 00:06:48
+[rank 0] END   numpy arc_distance rc=0 00:06:52
+[rank 0] BEGIN pluto arc_distance 00:06:52
+[rank 2] END   numpy azimint_naive rc=0 00:06:52
+[rank 2] BEGIN pluto azimint_naive 00:06:52
+[rank 1] END   pluto cholesky2 rc=0 00:06:55
+[rank 1] BEGIN dace_cpu_autoopt cholesky2 00:06:55
+[rank 0] END   pluto arc_distance rc=0 00:06:58
+[rank 0] BEGIN dace_cpu_autoopt arc_distance 00:06:58
+[rank 2] END   pluto azimint_naive rc=0 00:07:01
+[rank 2] BEGIN dace_cpu_autoopt azimint_naive 00:07:01
+[rank 1] END   dace_cpu_autoopt cholesky2 rc=0 00:07:06
+[rank 1] BEGIN numpy covariance 00:07:06
+[rank 0] END   dace_cpu_autoopt arc_distance rc=0 00:07:10
+[rank 0] BEGIN numpy channel_flow 00:07:10
+[rank 1] END   numpy covariance rc=0 00:07:11
+[rank 1] BEGIN pluto covariance 00:07:11
+[rank 2] END   dace_cpu_autoopt azimint_naive rc=0 00:07:12
+[rank 2] BEGIN numpy compute 00:07:12
+[rank 1] END   pluto covariance rc=0 00:07:14
+[rank 1] BEGIN dace_cpu_autoopt covariance 00:07:14
+[rank 1] END   dace_cpu_autoopt covariance rc=0 00:07:27
+[rank 1] BEGIN numpy gesummv 00:07:27
+[rank 2] END   numpy compute rc=0 00:07:51
+[rank 2] BEGIN pluto compute 00:07:51
+[rank 1] END   numpy gesummv rc=0 00:07:51
+[rank 1] BEGIN pluto gesummv 00:07:51
+[rank 3] END   numpy cavity_flow rc=0 00:07:52
+[rank 3] BEGIN pluto cavity_flow 00:07:52
+[rank 1] END   pluto gesummv rc=0 00:08:07
+[rank 1] BEGIN dace_cpu_autoopt gesummv 00:08:07
+[rank 2] END   pluto compute rc=0 00:08:15
+[rank 2] BEGIN dace_cpu_autoopt compute 00:08:15
+[rank 1] END   dace_cpu_autoopt gesummv rc=0 00:08:30
+[rank 1] BEGIN numpy k2mm 00:08:30
+[rank 2] END   dace_cpu_autoopt compute rc=0 00:08:41
+[rank 2] BEGIN numpy covariance2 00:08:41
+[rank 2] END   numpy covariance2 rc=0 00:08:43
+[rank 2] BEGIN pluto covariance2 00:08:44
+[rank 1] END   numpy k2mm rc=0 00:08:45
+[rank 1] BEGIN pluto k2mm 00:08:45
+[rank 2] END   pluto covariance2 rc=0 00:08:47
+[rank 2] BEGIN dace_cpu_autoopt covariance2 00:08:47
+[rank 2] END   dace_cpu_autoopt covariance2 rc=1 00:08:50
+[rank 2] BEGIN numpy go_fast 00:08:50
+[rank 3] END   pluto cavity_flow rc=0 00:08:54
+[rank 3] BEGIN dace_cpu_autoopt cavity_flow 00:08:54
+[rank 2] END   numpy go_fast rc=0 00:09:04
+[rank 2] BEGIN pluto go_fast 00:09:04
+[rank 3] END   dace_cpu_autoopt cavity_flow rc=0 00:09:08
+[rank 3] BEGIN numpy contour_integral 00:09:08
+[rank 2] END   pluto go_fast rc=0 00:09:20
+[rank 2] BEGIN dace_cpu_autoopt go_fast 00:09:20
+[rank 3] END   numpy contour_integral rc=0 00:09:36
+[rank 3] BEGIN pluto contour_integral 00:09:36
+[rank 2] END   dace_cpu_autoopt go_fast rc=0 00:09:39
+[rank 2] BEGIN numpy k3mm 00:09:39
+[rank 0] END   numpy channel_flow rc=0 00:09:44
+[rank 0] BEGIN pluto channel_flow 00:09:44
+[rank 2] END   numpy k3mm rc=0 00:09:53
+[rank 2] BEGIN pluto k3mm 00:09:53
+[rank 1] END   pluto k2mm rc=0 00:10:32
+[rank 1] BEGIN dace_cpu_autoopt k2mm 00:10:32
+[rank 0] END   pluto channel_flow rc=0 00:10:45
+[rank 0] BEGIN dace_cpu_autoopt channel_flow 00:10:45
+[rank 1] END   dace_cpu_autoopt k2mm rc=0 00:10:51
+[rank 1] BEGIN numpy mandelbrot2 00:10:51
+[rank 1] END   numpy mandelbrot2 rc=0 00:11:12
+[rank 1] BEGIN pluto mandelbrot2 00:11:12
+[rank 1] END   pluto mandelbrot2 rc=1 00:11:14
+[rank 1] BEGIN dace_cpu_autoopt mandelbrot2 00:11:14
+[rank 1] END   dace_cpu_autoopt mandelbrot2 rc=0 00:11:59
+[rank 1] BEGIN numpy scattering_self_energies 00:11:59
+[rank 2] END   pluto k3mm rc=0 00:12:27
+[rank 2] BEGIN dace_cpu_autoopt k3mm 00:12:27
+[rank 2] END   dace_cpu_autoopt k3mm rc=0 00:12:49
+[rank 2] BEGIN numpy mlp 00:12:49
+[rank 1] END   numpy scattering_self_energies rc=0 00:12:58
+[rank 1] BEGIN pluto scattering_self_energies 00:12:58
+[rank 2] END   numpy mlp rc=0 00:12:59
+[rank 2] BEGIN pluto mlp 00:12:59
+[rank 1] END   pluto scattering_self_energies rc=1 00:13:01
+[rank 1] BEGIN dace_cpu_autoopt scattering_self_energies 00:13:01
+[rank 2] END   pluto mlp rc=0 00:14:19
+[rank 2] BEGIN dace_cpu_autoopt mlp 00:14:19
+[rank 0] END   dace_cpu_autoopt channel_flow rc=0 00:14:22
+[rank 0] BEGIN numpy conv2d_bias 00:14:22
+[rank 2] END   dace_cpu_autoopt mlp rc=0 00:14:38
+[rank 2] BEGIN numpy softmax 00:14:38
+[rank 2] END   numpy softmax rc=0 00:15:31
+[rank 2] BEGIN pluto softmax 00:15:31
+[rank 2] END   pluto softmax rc=0 00:16:27
+[rank 2] BEGIN dace_cpu_autoopt softmax 00:16:27
+[rank 2] END   dace_cpu_autoopt softmax rc=0 00:16:51
+[rank 2] BEGIN numpy vadv 00:16:51
+[rank 2] END   numpy vadv rc=0 00:17:25
+[rank 2] BEGIN pluto vadv 00:17:25
+[rank 2] END   pluto vadv rc=0 00:17:35
+[rank 2] BEGIN dace_cpu_autoopt vadv 00:17:35
+[rank 2] END   dace_cpu_autoopt vadv rc=0 00:17:59
+[rank 1] END   dace_cpu_autoopt scattering_self_energies rc=0 00:18:41
+[rank 1] BEGIN numpy symm 00:18:41
+[rank 3] END   pluto contour_integral rc=0 00:21:00
+[rank 3] BEGIN dace_cpu_autoopt contour_integral 00:21:00
+[rank 0] END   numpy conv2d_bias rc=0 00:21:08
+[rank 0] BEGIN pluto conv2d_bias 00:21:08
+[rank 3] END   dace_cpu_autoopt contour_integral rc=0 00:21:24
+[rank 3] BEGIN numpy crc16 00:21:24
+[rank 3] END   numpy crc16 rc=0 00:22:41
+[rank 3] BEGIN pluto crc16 00:22:41
+[rank 3] END   pluto crc16 rc=0 00:22:48
+[rank 3] BEGIN dace_cpu_autoopt crc16 00:22:48
+[rank 3] END   dace_cpu_autoopt crc16 rc=0 00:22:59
+[rank 3] BEGIN numpy hdiff 00:22:59
+[rank 3] END   numpy hdiff rc=0 00:23:11
+[rank 3] BEGIN pluto hdiff 00:23:11
+[rank 3] END   pluto hdiff rc=0 00:23:18
+[rank 3] BEGIN dace_cpu_autoopt hdiff 00:23:18
+[rank 3] END   dace_cpu_autoopt hdiff rc=0 00:23:29
+[rank 3] BEGIN numpy lenet 00:23:29
+[rank 3] END   numpy lenet rc=0 00:24:49
+[rank 3] BEGIN pluto lenet 00:24:49
+[rank 1] END   numpy symm rc=0 00:25:47
+[rank 1] BEGIN pluto symm 00:25:47
+[rank 1] END   pluto symm rc=0 00:26:59
+[rank 1] BEGIN dace_cpu_autoopt symm 00:26:59
+[rank 0] END   pluto conv2d_bias rc=1 00:36:30
+[rank 0] BEGIN dace_cpu_autoopt conv2d_bias 00:36:30
+[rank 1] END   dace_cpu_autoopt symm rc=0 00:38:01
+[rank 3] END   pluto lenet rc=1 00:39:53
+[rank 3] BEGIN dace_cpu_autoopt lenet 00:39:53
+[rank 3] END   dace_cpu_autoopt lenet rc=0 00:43:21
+[rank 3] BEGIN numpy nbody 00:43:21
+[rank 3] END   numpy nbody rc=0 00:43:39
+[rank 3] BEGIN pluto nbody 00:43:39
+[rank 3] END   pluto nbody rc=0 00:44:37
+[rank 3] BEGIN dace_cpu_autoopt nbody 00:44:37
+[rank 3] END   dace_cpu_autoopt nbody rc=1 00:44:42
+[rank 3] BEGIN numpy spmv 00:44:42
+[rank 3] END   numpy spmv rc=0 00:44:57
+[rank 3] BEGIN pluto spmv 00:44:57
+[rank 3] END   pluto spmv rc=1 00:44:59
+[rank 3] BEGIN dace_cpu_autoopt spmv 00:44:59
+[rank 3] END   dace_cpu_autoopt spmv rc=0 00:45:08
+[rank 0] END   dace_cpu_autoopt conv2d_bias rc=0 01:05:29
+[rank 0] BEGIN numpy doitgen 01:05:29
+[rank 0] END   numpy doitgen rc=0 01:05:45
+[rank 0] BEGIN pluto doitgen 01:05:45
+[rank 0] END   pluto doitgen rc=0 01:07:16
+[rank 0] BEGIN dace_cpu_autoopt doitgen 01:07:16
+[rank 0] END   dace_cpu_autoopt doitgen rc=0 01:07:35
+[rank 0] BEGIN numpy jacobi_1d 01:07:35
+[rank 0] END   numpy jacobi_1d rc=0 01:07:51
+[rank 0] BEGIN pluto jacobi_1d 01:07:51
+[rank 0] END   pluto jacobi_1d rc=0 01:07:55
+[rank 0] BEGIN dace_cpu_autoopt jacobi_1d 01:07:55
+[rank 0] END   dace_cpu_autoopt jacobi_1d rc=0 01:08:25
+[rank 0] BEGIN numpy mandelbrot1 01:08:25
+[rank 0] END   numpy mandelbrot1 rc=0 01:09:14
+[rank 0] BEGIN pluto mandelbrot1 01:09:14
+[rank 0] END   pluto mandelbrot1 rc=0 01:09:25
+[rank 0] BEGIN dace_cpu_autoopt mandelbrot1 01:09:25
+[rank 0] END   dace_cpu_autoopt mandelbrot1 rc=0 01:09:40
+[rank 0] BEGIN numpy resnet 01:09:40
+[rank 0] END   numpy resnet rc=0 01:11:05
+[rank 0] BEGIN pluto resnet 01:11:05
+[rank 0] END   pluto resnet rc=0 01:16:55
+[rank 0] BEGIN dace_cpu_autoopt resnet 01:16:55
+[rank 0] END   dace_cpu_autoopt resnet rc=0 01:21:16
+[rank 0] BEGIN numpy stockham_fft 01:21:16
+[rank 0] END   numpy stockham_fft rc=0 01:21:24
+[rank 0] BEGIN pluto stockham_fft 01:21:24
+[rank 0] END   pluto stockham_fft rc=1 01:21:28
+[rank 0] BEGIN dace_cpu_autoopt stockham_fft 01:21:28
+[rank 0] END   dace_cpu_autoopt stockham_fft rc=0 01:36:58
+=== srun rc=0 ===
+
+=== merging per-rank databases ===
+merged 4242 rows from 4 shard(s) into /users/levwidmer/npbench/results/nonpoly-final50-4523913/npbench.db
+
+=== classifying every (kernel, framework) pair ===
+preset paper -- 31 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               31         0         0       0        0
+pluto               24         0         7       0        0
+dace_cpu_autoopt        27         1         0       3        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  crc16            pluto
+  symm             pluto
+
+NOT VALIDATED -- every one, with its reason:
+  azimint_hist     pluto      declined  polycc failed on azimint_hist_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 43, column 13. Error extrac
+  cavity_flow      dace_cpu_autoopt error     no result row and no recognised failure in the log
+  conv2d_bias      pluto      declined  clang did not finish within 900s on conv2d_pluto.c
+  covariance2      dace_cpu_autoopt error     ModuleNotFoundError: No module named 'npbench.benchmarks.polybench.covariance2.covariance2_dace'
+  lenet            pluto      declined  polycc did not finish within 900s on lenet_pluto_reference.c
+  mandelbrot2      pluto      declined  polycc failed on mandelbrot2_pluto_reference.c: [Clan] Error: non-affine expression at line 44, column 15. Error extracting polyhedra from source file
+  nbody            dace_cpu_autoopt error       encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9
+  scattering_self_energies pluto      declined  polycc failed on scattering_self_energies_pluto_reference.c: [Clan] Error: syntax error at line 54, column 61. Error extracting polyhedra from source 
+  spmv             pluto      declined  polycc failed on spmv_pluto_reference.c: [Clan] Error: syntax error at line 26, column 19. Error extracting polyhedra from source file: '/users/levwid
+  stockham_fft     pluto      declined  polycc failed on stockham_fft_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 53, column 24. Error extrac
+  vadv             dace_cpu_autoopt invalid   ran but did not validate against the NumPy reference
+preset paper -- 31 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               31         0         0       0        0
+pluto               24         0         7       0        0
+dace_cpu_autoopt        27         1         0       3        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  crc16            pluto
+  symm             pluto
+
+NOT VALIDATED -- every one, with its reason:
+  azimint_hist     pluto      declined  polycc failed on azimint_hist_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 43, column 13. Error extrac
+  cavity_flow      dace_cpu_autoopt error     no result row and no recognised failure in the log
+  conv2d_bias      pluto      declined  clang did not finish within 900s on conv2d_pluto.c
+  covariance2      dace_cpu_autoopt error     ModuleNotFoundError: No module named 'npbench.benchmarks.polybench.covariance2.covariance2_dace'
+  lenet            pluto      declined  polycc did not finish within 900s on lenet_pluto_reference.c
+  mandelbrot2      pluto      declined  polycc failed on mandelbrot2_pluto_reference.c: [Clan] Error: non-affine expression at line 44, column 15. Error extracting polyhedra from source file
+  nbody            dace_cpu_autoopt error       encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9
+  scattering_self_energies pluto      declined  polycc failed on scattering_self_energies_pluto_reference.c: [Clan] Error: syntax error at line 54, column 61. Error extracting polyhedra from source 
+  spmv             pluto      declined  polycc failed on spmv_pluto_reference.c: [Clan] Error: syntax error at line 26, column 19. Error extracting polyhedra from source file: '/users/levwid
+  stockham_fft     pluto      declined  polycc failed on stockham_fft_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 53, column 24. Error extrac
+  vadv             dace_cpu_autoopt invalid   ran but did not validate against the NumPy reference
+
+=== plot ===
+wrote /users/levwidmer/npbench/results/nonpoly-final50-4523913/m-verify-4523913.pdf
+
+=== statistics (median / IQR / 95% moving-block bootstrap CI, validated rows only) ===
+kernel           framework             n       median          IQR  IQR/med           95% CI of median flags
+--------------------------------------------------------------------------------------------------------------------------
+k2mm             dace_cpu_autoopt     50     0.117496     0.031795    27.1%       [0.116670, 0.132371] wide-IQR,wide-CI,autocorrelated(r1=+0.44)
+k2mm             numpy                50     0.167778     0.022382    13.3%       [0.161828, 0.170860] wide-IQR,wide-CI,possible-multimodal,outliers=2
+k2mm             pluto                50     1.891374     0.005762     0.3%       [1.889262, 1.892599] drift(rho=+0.38)
+k3mm             dace_cpu_autoopt     50     0.171495     0.027165    15.8%       [0.170133, 0.184690] wide-IQR,wide-CI
+k3mm             numpy                50     0.177659     0.000909     0.5%       [0.177474, 0.178018] possible-multimodal,outliers=2
+k3mm             pluto                50     2.759507     0.014368     0.5%       [2.757192, 2.764008] outliers=1,autocorrelated(r1=+0.44)
+arc_distance     dace_cpu_autoopt     50     0.037566     0.012228    32.6%       [0.033314, 0.040431] wide-IQR,wide-range,wide-CI
+arc_distance     numpy                50     0.463107     0.003027     0.7%       [0.462646, 0.463645] autocorrelated(r1=+0.47),drift(rho=-0.57)
+arc_distance     pluto                50     0.007821     0.000445     5.7%       [0.007730, 0.007918] outliers=2
+azimint_hist     dace_cpu_autoopt     50     0.003839     0.000053     1.4%       [0.003827, 0.003854] possible-multimodal,autocorrelated(r1=-0.34)
+azimint_hist     numpy                50     0.014825     0.000475     3.2%       [0.014755, 0.014945] autocorrelated(r1=+0.82),drift(rho=-0.76)
+azimint_naive    dace_cpu_autoopt     50     0.043676     0.016515    37.8%       [0.038510, 0.047267] wide-IQR,wide-range,wide-CI,possible-multimodal
+azimint_naive    numpy                50     0.491334     0.011531     2.3%       [0.489514, 0.493124] possible-multimodal,outliers=3,drift(rho=-0.36)
+azimint_naive    pluto                50     0.092115     0.000401     0.4%       [0.092055, 0.092260] autocorrelated(r1=+0.33)
+cavity_flow      numpy                50     1.612889     0.004572     0.3%       [1.611643, 1.613859] possible-multimodal,outliers=8,autocorrelated(r1=+0.84)
+cavity_flow      pluto                50     0.970787     0.010560     1.1%       [0.967154, 0.973314] autocorrelated(r1=+0.42),drift(rho=+0.43)
+channel_flow     dace_cpu_autoopt     50     3.261835     0.036218     1.1%       [3.256830, 3.273678] 
+channel_flow     numpy                50     2.862318     0.040594     1.4%       [2.856765, 2.866098] outliers=2,autocorrelated(r1=+0.84),drift(rho=+0.51)
+channel_flow     pluto                50     0.985813     0.013649     1.4%       [0.981840, 0.988713] possible-multimodal,outliers=2,autocorrelated(r1=+0.33),drift(rho=+0.48)
+cholesky2        dace_cpu_autoopt     50     0.033129     0.014084    42.5%       [0.029132, 0.038118] wide-IQR,wide-range,wide-CI
+cholesky2        numpy                50     0.021811     0.000365     1.7%       [0.021732, 0.021933] outliers=1,autocorrelated(r1=+0.33)
+cholesky2        pluto                50     0.046553     0.000305     0.7%       [0.046490, 0.046636] autocorrelated(r1=+0.42)
+compute          dace_cpu_autoopt     50     0.067671     0.002384     3.5%       [0.067234, 0.068063] drift(rho=+0.38)
+compute          numpy                50     0.436057     0.004951     1.1%       [0.433528, 0.437034] wide-range,possible-multimodal,outliers=3
+compute          pluto                50     0.091503     0.009454    10.3%       [0.088986, 0.095104] wide-IQR,wide-CI,possible-multimodal,outliers=1,drift(rho=-0.45)
+contour_integral dace_cpu_autoopt     50     0.221029     0.003287     1.5%       [0.220611, 0.221810] possible-multimodal,outliers=5
+contour_integral numpy                50     0.491976     0.017490     3.6%       [0.490846, 0.495732] autocorrelated(r1=+0.35)
+contour_integral pluto                50    12.651954     0.370787     2.9%     [12.566622, 12.797232] outliers=2
+conv2d_bias      dace_cpu_autoopt     50    32.623010     0.726889     2.2%     [32.477313, 32.813836] possible-multimodal,outliers=3,autocorrelated(r1=+0.59)
+conv2d_bias      numpy                50     7.585420     0.028522     0.4%       [7.577927, 7.592933] possible-multimodal,outliers=4,autocorrelated(r1=+0.77),drift(rho=-0.46)
+covariance       dace_cpu_autoopt     50     0.061751     0.000130     0.2%       [0.061711, 0.061771] outliers=2,drift(rho=-0.39)
+covariance       numpy                50     0.028033     0.000169     0.6%       [0.027993, 0.028093] possible-multimodal,outliers=1
+covariance       pluto                50     0.009755     0.000094     1.0%       [0.009732, 0.009783] possible-multimodal,outliers=1
+covariance2      numpy                50     0.005535     0.000102     1.8%       [0.005500, 0.005563] possible-multimodal,outliers=1,autocorrelated(r1=+0.33),drift(rho=-0.69)
+covariance2      pluto                50     0.009474     0.000094     1.0%       [0.009447, 0.009497] possible-multimodal
+crc16            dace_cpu_autoopt     50     0.012460     0.000051     0.4%       [0.012447, 0.012472] possible-multimodal,outliers=1
+crc16            numpy                50     1.413523     0.001190     0.1%       [1.413281, 1.413640] possible-multimodal,outliers=6,autocorrelated(r1=+0.35)
+crc16            pluto                50     0.008416     0.000037     0.4%       [0.008401, 0.008428] 
+doitgen          dace_cpu_autoopt     50     0.150540     0.038848    25.8%       [0.145085, 0.166439] wide-IQR,wide-range,wide-CI
+doitgen          numpy                50     0.238647     0.009948     4.2%       [0.238445, 0.247075] possible-multimodal,autocorrelated(r1=+0.73),drift(rho=-0.74)
+doitgen          pluto                50     1.618400     0.024205     1.5%       [1.612706, 1.627292] possible-multimodal
+gesummv          dace_cpu_autoopt     50     0.036826     0.008412    22.8%       [0.034429, 0.038872] wide-IQR,wide-CI
+gesummv          numpy                50     0.197264     0.003584     1.8%       [0.196766, 0.197922] wide-range,possible-multimodal,outliers=3,drift(rho=-0.43)
+gesummv          pluto                50     0.007369     0.000152     2.1%       [0.007349, 0.007447] wide-range,possible-multimodal,outliers=1
+hdiff            dace_cpu_autoopt     50     0.011134     0.008297    74.5%       [0.008829, 0.012700] wide-IQR,wide-range,wide-CI
+hdiff            numpy                50     0.152584     0.001588     1.0%       [0.151980, 0.152856] 
+hdiff            pluto                50     0.023803     0.000116     0.5%       [0.023770, 0.023823] 
+jacobi_1d        dace_cpu_autoopt     50     0.376313     0.078402    20.8%       [0.357809, 0.410612] wide-IQR,wide-CI
+jacobi_1d        numpy                50     0.257887     0.008318     3.2%       [0.254167, 0.258801] possible-multimodal,outliers=1,autocorrelated(r1=+0.63)
+jacobi_1d        pluto                50     0.013996     0.010342    73.9%       [0.004963, 0.014220] wide-IQR,wide-range,wide-CI,possible-multimodal,autocorrelated(r1=-0.76)
+lenet            dace_cpu_autoopt     50     3.608126     0.012553     0.3%       [3.605008, 3.612655] 
+lenet            numpy                50     1.457003     0.013815     0.9%       [1.451369, 1.458662] possible-multimodal
+mandelbrot1      dace_cpu_autoopt     50     0.065822     0.026210    39.8%       [0.061149, 0.072730] wide-IQR,wide-range,wide-CI
+mandelbrot1      numpy                50     0.877756     0.002567     0.3%       [0.877219, 0.878680] possible-multimodal,outliers=5
+mandelbrot1      pluto                50     0.075980     0.009345    12.3%       [0.074035, 0.078016] wide-IQR,wide-CI,autocorrelated(r1=-0.49)
+mandelbrot2      dace_cpu_autoopt     50     0.594988     0.012423     2.1%       [0.592350, 0.598043] 
+mandelbrot2      numpy                50     0.365503     0.006610     1.8%       [0.363683, 0.368296] drift(rho=-0.40)
+mlp              dace_cpu_autoopt     50     0.031166     0.015269    49.0%       [0.027619, 0.036480] wide-IQR,wide-range,wide-CI
+mlp              numpy                50     0.023658     0.011013    46.6%       [0.022392, 0.025362] wide-IQR,wide-range,wide-CI,possible-multimodal,outliers=2
+mlp              pluto                50     1.292536     0.003552     0.3%       [1.291963, 1.293685] possible-multimodal,outliers=6
+nbody            numpy                50     0.297844     0.009024     3.0%       [0.294836, 0.298888] possible-multimodal,outliers=1,autocorrelated(r1=+0.50),drift(rho=-0.85)
+nbody            pluto                50     0.193752     0.001404     0.7%       [0.193388, 0.194068] 
+go_fast          dace_cpu_autoopt     50     0.062669     0.004223     6.7%       [0.061316, 0.063772] 
+go_fast          numpy                50     0.108615     0.001246     1.1%       [0.108061, 0.108797] wide-range,possible-multimodal,outliers=2
+go_fast          pluto                50     0.078131     0.008741    11.2%       [0.077239, 0.081327] wide-IQR,wide-CI,possible-multimodal,outliers=1
+resnet           dace_cpu_autoopt     50     4.491392     0.224201     5.0%       [4.425170, 4.585483] 
+resnet           numpy                50     1.542567     0.113186     7.3%       [1.504456, 1.603696] wide-CI,possible-multimodal,autocorrelated(r1=+0.64),drift(rho=-0.89)
+resnet           pluto                50     4.524463     0.027335     0.6%       [4.516920, 4.529521] outliers=1
+softmax          dace_cpu_autoopt     50     0.131956     0.022383    17.0%       [0.128671, 0.137993] wide-IQR,wide-CI
+softmax          numpy                50     0.831347     0.002468     0.3%       [0.830681, 0.831927] wide-range,possible-multimodal,outliers=3,drift(rho=-0.40)
+softmax          pluto                50     0.822113     0.010836     1.3%       [0.819086, 0.824821] possible-multimodal,outliers=1
+spmv             dace_cpu_autoopt     50     0.000481     0.000295    61.2%       [0.000378, 0.000522] wide-IQR,wide-range,wide-CI,possible-multimodal,outliers=9,autocorrelated(r1=+0.82),drift(rho=-0.85)
+spmv             numpy                50     0.237833     0.000864     0.4%       [0.237588, 0.238028] possible-multimodal,outliers=8,autocorrelated(r1=+0.53),drift(rho=-0.57)
+scattering_self_energies dace_cpu_autoopt     50     6.198731     0.019736     0.3%       [6.192789, 6.204388] autocorrelated(r1=+0.81),drift(rho=-0.50)
+scattering_self_energies numpy                50     1.060132     0.001036     0.1%       [1.059784, 1.060402] outliers=3,autocorrelated(r1=+0.59),drift(rho=-0.60)
+stockham_fft     dace_cpu_autoopt     50    17.257557     0.721753     4.2%     [17.091028, 17.455145] autocorrelated(r1=+0.36)
+stockham_fft     numpy                50     0.095479     0.001245     1.3%       [0.095227, 0.095530] wide-range,possible-multimodal,outliers=2,drift(rho=-0.80)
+symm             dace_cpu_autoopt     50    11.977891     0.017088     0.1%     [11.973887, 11.984923] outliers=5,autocorrelated(r1=+0.70),drift(rho=+0.40)
+symm             numpy                50     7.274203     4.622355    63.5%       [6.836077, 8.434390] wide-IQR,wide-range,wide-CI,autocorrelated(r1=+0.95),drift(rho=-0.60)
+symm             pluto                50     1.018621     0.003125     0.3%       [1.018131, 1.019723] possible-multimodal,outliers=4,autocorrelated(r1=+0.33),drift(rho=-0.71)
+vadv             numpy                50     0.544392     0.020109     3.7%       [0.539321, 0.548368] autocorrelated(r1=+0.89),drift(rho=+0.49)
+vadv             pluto                50     0.047882     0.000527     1.1%       [0.047766, 0.048036] outliers=5,autocorrelated(r1=+0.84),drift(rho=+0.80)
+
+73 of 82 validated pairs carry a flag; 50 non-validated/other-variant rows excluded
+bootstrap: 10000 resamples, seed 20260817, percentile method, no outlier removal
+
+=== thesis report ===
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+wrote /users/levwidmer/npbench/results/nonpoly-final50-4523913/nonpoly-final50-4523913-thesis.pdf
+  geo-mean pluto  1.80x over the 24 kernels it answered
+  geo-mean dace   1.85x over the 27 kernels it answered
+
+================================================================
+  DIR      : /users/levwidmer/npbench/results/nonpoly-final50-4523913
+  DB       : /users/levwidmer/npbench/results/nonpoly-final50-4523913/npbench.db
+  MANIFEST : /users/levwidmer/npbench/results/nonpoly-final50-4523913/manifest.json
+  STATUS   : /users/levwidmer/npbench/results/nonpoly-final50-4523913/status.json
+  SUMMARY  : /users/levwidmer/npbench/results/nonpoly-final50-4523913/summary.txt
+  PLOT     : /users/levwidmer/npbench/results/nonpoly-final50-4523913/m-verify-4523913.pdf
+  STATS    : /users/levwidmer/npbench/results/nonpoly-final50-4523913/stats.json | /users/levwidmer/npbench/results/nonpoly-final50-4523913/stats.csv
+  THESIS   : /users/levwidmer/npbench/results/nonpoly-final50-4523913/nonpoly-final50-4523913-thesis.pdf (+ -p1.png -p2.png)
+  LOG      : /users/levwidmer/npbench/results/nonpoly-final50-4523913/slurm-4523913.out
+================================================================
+=== finish 01:37:18

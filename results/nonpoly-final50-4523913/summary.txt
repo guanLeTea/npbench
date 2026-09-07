@@ -1,0 +1,24 @@
+preset paper -- 31 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               31         0         0       0        0
+pluto               24         0         7       0        0
+dace_cpu_autoopt        27         1         0       3        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  crc16            pluto
+  symm             pluto
+
+NOT VALIDATED -- every one, with its reason:
+  azimint_hist     pluto      declined  polycc failed on azimint_hist_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 43, column 13. Error extrac
+  cavity_flow      dace_cpu_autoopt error     no result row and no recognised failure in the log
+  conv2d_bias      pluto      declined  clang did not finish within 900s on conv2d_pluto.c
+  covariance2      dace_cpu_autoopt error     ModuleNotFoundError: No module named 'npbench.benchmarks.polybench.covariance2.covariance2_dace'
+  lenet            pluto      declined  polycc did not finish within 900s on lenet_pluto_reference.c
+  mandelbrot2      pluto      declined  polycc failed on mandelbrot2_pluto_reference.c: [Clan] Error: non-affine expression at line 44, column 15. Error extracting polyhedra from source file
+  nbody            dace_cpu_autoopt error       encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9
+  scattering_self_energies pluto      declined  polycc failed on scattering_self_energies_pluto_reference.c: [Clan] Error: syntax error at line 54, column 61. Error extracting polyhedra from source 
+  spmv             pluto      declined  polycc failed on spmv_pluto_reference.c: [Clan] Error: syntax error at line 26, column 19. Error extracting polyhedra from source file: '/users/levwid
+  stockham_fft     pluto      declined  polycc failed on stockham_fft_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 53, column 24. Error extrac
+  vadv             dace_cpu_autoopt invalid   ran but did not validate against the NumPy reference

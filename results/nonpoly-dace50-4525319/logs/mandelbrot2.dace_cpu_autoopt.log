@@ -1,0 +1,8 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing DaCe CPU auto_opt with mandelbrot2 on the paper dataset *****
+NumPy - default - validation: 356ms
+DaCe CPU auto_opt - auto_opt - first/validation: 499ms
+DaCe CPU auto_opt - auto_opt - auto_opt - validation: SUCCESS
+DaCe CPU auto_opt - auto_opt - median: 487ms

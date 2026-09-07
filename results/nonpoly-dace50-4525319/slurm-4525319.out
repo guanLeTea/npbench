@@ -1,0 +1,184 @@
+npbench-env: ready
+  repo        /users/levwidmer/npbench
+  python      Python 3.14.3
+  numpy       2.5.2
+  dace        2.0.0a6 /users/levwidmer/dace/dace/__init__.py
+  dace branch 
+  gcc/g++     14.3.0 / 14.3.0
+  cmake       cmake version 3.31.11
+  clang       clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)
+  polycc      /capstor/scratch/cscs/levwidmer/opt/pluto/bin/polycc
+  dace c++    /user-environment/env/default/bin/g++
+=== npbench m-verify: 31 kernels x [dace_cpu_autoopt] preset=paper repeat=50 ===
+=== namespace=/users/levwidmer/npbench/results/nonpoly-dace50-4525319
+=== node=nid005409 ranks=4 cpus-per-task=72
+=== npbench=d19133b dace=HEAD@b27aaed2f
+=== start 15:50:31
+{
+  "campaign": "nonpoly-dace50", "job": "4525319",
+  "purpose": "preset-paper performance campaign at REPEAT=50; medians over 50 repetitions, every reported timing from a validated run",
+  "date": "2026-08-23T15:50:24+02:00", "node": "nid005409",
+  "preset": "paper", "repeat": 50, "timeout_s": 900,
+  "kernels": 31, "frameworks": "dace_cpu_autoopt",
+  "ranks": 4, "cpus_per_task": 72,
+  "npbench_commit": "d19133b440a33ff92aa1ccb6adfabccc94d8ff21",
+  "npbench_branch": "bench/daint-pluto-nonpoly",
+  "npbench_dirty_files": 2,
+  "dace_tree": "/users/levwidmer/dace",
+  "dace_branch": "HEAD",
+  "dace_commit": "b27aaed2f8456674e29c57a0a6115643bb2ae4c2",
+  "dace_dirty_files": 0,
+  "python": "Python 3.14.3",
+  "numpy": "2.5.2",
+  "dace": "2.0.0a6",
+  "gcc": "14.3.0",
+  "clang": "clang version 17.0.6 (http://git.linaro.org/toolchain/jenkins-scripts.git 09f505cadfbe9987730e641398ab9a2ca0cdb67f)",
+  "polycc": "PLUTO version 0.12.0-33-gdc46216 - An automatic parallelizer and locality optimizer",
+  "uenv": "/user-environment:prgenv-gnu:default"
+}
+[rank 3] cpus=216-287 threads=72 7 kernels: cavity_flow contour_integral crc16 hdiff lenet nbody spmv
+[rank 3] BEGIN dace_cpu_autoopt cavity_flow 15:50:31
+[rank 1] cpus=72-143 threads=72 8 kernels: azimint_hist cholesky2 covariance gesummv k2mm mandelbrot2 scattering_self_energies symm
+[rank 0] cpus=0-71 threads=72 8 kernels: arc_distance channel_flow conv2d_bias doitgen jacobi_1d mandelbrot1 resnet stockham_fft
+[rank 1] BEGIN dace_cpu_autoopt azimint_hist 15:50:31
+[rank 0] BEGIN dace_cpu_autoopt arc_distance 15:50:31
+[rank 2] cpus=144-215 threads=72 8 kernels: azimint_naive compute covariance2 go_fast k3mm mlp softmax vadv
+[rank 2] BEGIN dace_cpu_autoopt azimint_naive 15:50:31
+[rank 1] END   dace_cpu_autoopt azimint_hist rc=0 15:50:47
+[rank 1] BEGIN dace_cpu_autoopt cholesky2 15:50:47
+[rank 2] END   dace_cpu_autoopt azimint_naive rc=0 15:50:47
+[rank 2] BEGIN dace_cpu_autoopt compute 15:50:47
+[rank 0] END   dace_cpu_autoopt arc_distance rc=0 15:50:49
+[rank 0] BEGIN dace_cpu_autoopt channel_flow 15:50:49
+[rank 1] END   dace_cpu_autoopt cholesky2 rc=0 15:50:58
+[rank 1] BEGIN dace_cpu_autoopt covariance 15:50:58
+[rank 1] END   dace_cpu_autoopt covariance rc=0 15:51:08
+[rank 1] BEGIN dace_cpu_autoopt gesummv 15:51:08
+[rank 2] END   dace_cpu_autoopt compute rc=0 15:51:14
+[rank 2] BEGIN dace_cpu_autoopt covariance2 15:51:14
+[rank 2] END   dace_cpu_autoopt covariance2 rc=0 15:51:24
+[rank 2] BEGIN dace_cpu_autoopt go_fast 15:51:24
+[rank 1] END   dace_cpu_autoopt gesummv rc=0 15:51:28
+[rank 1] BEGIN dace_cpu_autoopt k2mm 15:51:28
+[rank 2] END   dace_cpu_autoopt go_fast rc=0 15:51:42
+[rank 2] BEGIN dace_cpu_autoopt k3mm 15:51:42
+[rank 3] END   dace_cpu_autoopt cavity_flow rc=0 15:51:44
+[rank 3] BEGIN dace_cpu_autoopt contour_integral 15:51:44
+[rank 1] END   dace_cpu_autoopt k2mm rc=0 15:51:44
+[rank 1] BEGIN dace_cpu_autoopt mandelbrot2 15:51:44
+[rank 2] END   dace_cpu_autoopt k3mm rc=0 15:52:02
+[rank 2] BEGIN dace_cpu_autoopt mlp 15:52:02
+[rank 3] END   dace_cpu_autoopt contour_integral rc=0 15:52:05
+[rank 3] BEGIN dace_cpu_autoopt crc16 15:52:05
+[rank 3] END   dace_cpu_autoopt crc16 rc=0 15:52:16
+[rank 3] BEGIN dace_cpu_autoopt hdiff 15:52:16
+[rank 2] END   dace_cpu_autoopt mlp rc=0 15:52:18
+[rank 2] BEGIN dace_cpu_autoopt softmax 15:52:18
+[rank 1] END   dace_cpu_autoopt mandelbrot2 rc=0 15:52:22
+[rank 1] BEGIN dace_cpu_autoopt scattering_self_energies 15:52:22
+[rank 3] END   dace_cpu_autoopt hdiff rc=0 15:52:26
+[rank 3] BEGIN dace_cpu_autoopt lenet 15:52:26
+[rank 2] END   dace_cpu_autoopt softmax rc=0 15:52:37
+[rank 2] BEGIN dace_cpu_autoopt vadv 15:52:37
+[rank 3] END   dace_cpu_autoopt lenet rc=0 15:52:43
+[rank 3] BEGIN dace_cpu_autoopt nbody 15:52:43
+[rank 1] END   dace_cpu_autoopt scattering_self_energies rc=0 15:52:47
+[rank 1] BEGIN dace_cpu_autoopt symm 15:52:47
+[rank 3] END   dace_cpu_autoopt nbody rc=0 15:53:07
+[rank 3] BEGIN dace_cpu_autoopt spmv 15:53:07
+[rank 1] END   dace_cpu_autoopt symm rc=0 15:53:07
+[rank 2] END   dace_cpu_autoopt vadv rc=0 15:53:08
+[rank 3] END   dace_cpu_autoopt spmv rc=0 15:53:16
+[rank 0] END   dace_cpu_autoopt channel_flow rc=0 15:53:42
+[rank 0] BEGIN dace_cpu_autoopt conv2d_bias 15:53:42
+[rank 0] END   dace_cpu_autoopt conv2d_bias rc=0 15:54:16
+[rank 0] BEGIN dace_cpu_autoopt doitgen 15:54:16
+[rank 0] END   dace_cpu_autoopt doitgen rc=0 15:54:25
+[rank 0] BEGIN dace_cpu_autoopt jacobi_1d 15:54:25
+[rank 0] END   dace_cpu_autoopt jacobi_1d rc=0 15:54:35
+[rank 0] BEGIN dace_cpu_autoopt mandelbrot1 15:54:35
+[rank 0] END   dace_cpu_autoopt mandelbrot1 rc=0 15:54:44
+[rank 0] BEGIN dace_cpu_autoopt resnet 15:54:44
+[rank 0] END   dace_cpu_autoopt resnet rc=0 15:55:06
+[rank 0] BEGIN dace_cpu_autoopt stockham_fft 15:55:06
+[rank 0] END   dace_cpu_autoopt stockham_fft rc=0 15:55:25
+=== srun rc=0 ===
+
+=== merging per-rank databases ===
+merged 1581 rows from 4 shard(s) into /users/levwidmer/npbench/results/nonpoly-dace50-4525319/npbench.db
+
+=== classifying every (kernel, framework) pair ===
+preset paper -- 31 kernels x 1 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+dace_cpu_autoopt        31         0         0       0        0
+
+every (kernel, framework) pair validated
+preset paper -- 31 kernels x 1 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+dace_cpu_autoopt        31         0         0       0        0
+
+every (kernel, framework) pair validated
+
+=== plot ===
+wrote /users/levwidmer/npbench/results/nonpoly-dace50-4525319/m-verify-4525319.pdf
+
+=== statistics (median / IQR / 95% moving-block bootstrap CI, validated rows only) ===
+kernel           framework             n       median          IQR  IQR/med           95% CI of median flags
+--------------------------------------------------------------------------------------------------------------------------
+k2mm             dace_cpu_autoopt     50     0.088970     0.000386     0.4%       [0.088836, 0.089045] possible-multimodal,outliers=2
+k3mm             dace_cpu_autoopt     50     0.161205     0.003332     2.1%       [0.160378, 0.162063] possible-multimodal,outliers=1
+arc_distance     dace_cpu_autoopt     50     0.009273     0.000196     2.1%       [0.009242, 0.009328] possible-multimodal,outliers=2
+azimint_hist     dace_cpu_autoopt     50     0.003792     0.000064     1.7%       [0.003782, 0.003809] autocorrelated(r1=-0.31)
+azimint_naive    dace_cpu_autoopt     50     0.010227     0.000707     6.9%       [0.010022, 0.010390] possible-multimodal,outliers=1
+cavity_flow      dace_cpu_autoopt     50     0.935562     0.011401     1.2%       [0.933141, 0.938354] possible-multimodal,outliers=4,autocorrelated(r1=+0.55)
+channel_flow     dace_cpu_autoopt     50     2.400151     0.040967     1.7%       [2.389232, 2.412800] possible-multimodal,autocorrelated(r1=+0.51),drift(rho=-0.56)
+cholesky2        dace_cpu_autoopt     50     0.013186     0.000189     1.4%       [0.013144, 0.013226] possible-multimodal,outliers=2
+compute          dace_cpu_autoopt     50     0.090183     0.040765    45.2%       [0.056547, 0.090994] wide-IQR,wide-range,wide-CI,possible-multimodal,autocorrelated(r1=-0.71)
+contour_integral dace_cpu_autoopt     50     0.213771     0.002552     1.2%       [0.213352, 0.214522] possible-multimodal,outliers=3
+conv2d_bias      dace_cpu_autoopt     50     0.199262     0.000354     0.2%       [0.199152, 0.199357] possible-multimodal,outliers=4
+covariance       dace_cpu_autoopt     50     0.037223     0.000166     0.4%       [0.037192, 0.037266] possible-multimodal,outliers=3
+covariance2      dace_cpu_autoopt     50     0.040365     0.001996     4.9%       [0.039984, 0.041180] autocorrelated(r1=-0.65)
+crc16            dace_cpu_autoopt     50     0.012371     0.000033     0.3%       [0.012364, 0.012377] possible-multimodal,outliers=3,drift(rho=-0.43)
+doitgen          dace_cpu_autoopt     50     0.005129     0.000187     3.6%       [0.005058, 0.005177] possible-multimodal,autocorrelated(r1=-0.55)
+gesummv          dace_cpu_autoopt     50     0.019265     0.001635     8.5%       [0.018548, 0.019995] wide-CI,possible-multimodal,autocorrelated(r1=-0.88)
+hdiff            dace_cpu_autoopt     50     0.004447     0.000189     4.3%       [0.004397, 0.004500] possible-multimodal,outliers=1
+jacobi_1d        dace_cpu_autoopt     50     0.081779     0.000258     0.3%       [0.081676, 0.081834] possible-multimodal,outliers=5
+lenet            dace_cpu_autoopt     50     0.004971     0.000112     2.3%       [0.004947, 0.005018] possible-multimodal,outliers=2
+mandelbrot1      dace_cpu_autoopt     50     0.011325     0.000097     0.9%       [0.011305, 0.011344] wide-range,possible-multimodal,outliers=4,autocorrelated(r1=+0.68)
+mandelbrot2      dace_cpu_autoopt     50     0.487494     0.006632     1.4%       [0.485820, 0.488374] possible-multimodal,outliers=2,drift(rho=-0.43)
+mlp              dace_cpu_autoopt     50     0.009656     0.001727    17.9%       [0.009331, 0.010121] wide-IQR,wide-range,wide-CI,possible-multimodal,outliers=1
+nbody            dace_cpu_autoopt     50     0.079486     0.000461     0.6%       [0.079401, 0.079611] drift(rho=-0.47)
+go_fast          dace_cpu_autoopt     50     0.082818     0.007067     8.5%       [0.080847, 0.084553] outliers=2,drift(rho=-0.44)
+resnet           dace_cpu_autoopt     50     0.022685     0.000207     0.9%       [0.022639, 0.022739] wide-range,possible-multimodal,outliers=2
+softmax          dace_cpu_autoopt     50     0.071603     0.002678     3.7%       [0.071108, 0.072863] possible-multimodal,outliers=1
+spmv             dace_cpu_autoopt     50     0.000223     0.000018     8.2%       [0.000220, 0.000228] wide-range,possible-multimodal,outliers=4,drift(rho=-0.62)
+scattering_self_energies dace_cpu_autoopt     50     0.233128     0.000327     0.1%       [0.233016, 0.233209] outliers=1
+stockham_fft     dace_cpu_autoopt     50     0.132523     0.010615     8.0%       [0.131423, 0.138982] wide-CI,possible-multimodal,outliers=1,autocorrelated(r1=+0.68)
+symm             dace_cpu_autoopt     50     0.051439     0.000661     1.3%       [0.051194, 0.051542] possible-multimodal,outliers=2,autocorrelated(r1=-0.36)
+vadv             dace_cpu_autoopt     50     0.207064     0.006895     3.3%       [0.205349, 0.208709] possible-multimodal,autocorrelated(r1=+0.53),drift(rho=+0.76)
+
+31 of 31 validated pairs carry a flag; 0 non-validated/other-variant rows excluded
+bootstrap: 10000 resamples, seed 20260817, percentile method, no outlier removal
+
+=== thesis report ===
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+wrote /users/levwidmer/npbench/results/nonpoly-dace50-4525319/nonpoly-dace50-4525319-thesis.pdf
+
+================================================================
+  DIR      : /users/levwidmer/npbench/results/nonpoly-dace50-4525319
+  DB       : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/npbench.db
+  MANIFEST : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/manifest.json
+  STATUS   : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/status.json
+  SUMMARY  : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/summary.txt
+  PLOT     : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/m-verify-4525319.pdf
+  STATS    : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/stats.json | /users/levwidmer/npbench/results/nonpoly-dace50-4525319/stats.csv
+  THESIS   : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/nonpoly-dace50-4525319-thesis.pdf (+ -p1.png -p2.png)
+  LOG      : /users/levwidmer/npbench/results/nonpoly-dace50-4525319/slurm-4525319.out
+================================================================
+=== finish 15:55:36

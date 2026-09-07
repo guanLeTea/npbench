@@ -1,0 +1,134 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing DaCe CPU auto_opt with nbody on the paper dataset *****
+NumPy - default - validation: 303ms
+Exception Cannot multiply arrays with shapes: (N, 1, N, 1) and (N,)
+  encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9 raised while parsing DaCe program:
+  in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56
+    ax = G * (dx * inv_r3) @ mass
+Exception Cannot multiply arrays with shapes: (N, 1, N, 1) and (N,)
+  encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9 raised while parsing DaCe program:
+  in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 139
+    acc = getAcc(pos, mass, G, softening)
+Traceback (most recent call last):
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 5338, in _visit_op
+    result = func(self, self.sdfg, self.last_block, operand1, operand2)
+  File "/users/levwidmer/dace/dace/frontend/python/replacements/linalg.py", line 125, in _matmult
+    raise SyntaxError("Cannot multiply arrays with shapes: {} and {}".format(arr1.shape, arr2.shape))
+SyntaxError: Cannot multiply arrays with shapes: (N, 1, N, 1) and (N,)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/users/levwidmer/npbench/run_benchmark.py", line 57, in <module>
+    test.run(args["preset"], args["validate"], args["repeat"], args["timeout"])
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/test.py", line 91, in run
+    for impl, impl_name in self.frmwrk.implementations(self.bench):
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/dace_framework.py", line 157, in implementations
+    base_sdfg, parse_time = util.benchmark("__npb_result = ct_impl.to_sdfg(simplify=False)",
+                            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                           out_text="DaCe parsing time",
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                           context=locals(),
+                                           ^^^^^^^^^^^^^^^^^
+                                           output='__npb_result',
+                                           ^^^^^^^^^^^^^^^^^^^^^^
+                                           verbose=False)
+                                           ^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/utilities.py", line 138, in benchmark
+    raw_time_list = timeit.repeat(stmt, setup=setup, repeat=repeat, number=1, globals=ldict)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/timeit.py", line 240, in repeat
+    return Timer(stmt, setup, timer, globals).repeat(repeat, number)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/timeit.py", line 205, in repeat
+    t = self.timeit(number)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/timeit.py", line 177, in timeit
+    timing = self.inner(it, self.timer)
+  File "<timeit-src>", line 6, in inner
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 303, in to_sdfg
+    sdfg = self._parse(args, kwargs, simplify=simplify, save=save, validate=validate)
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 516, in _parse
+    sdfg, cached = self._generate_pdp(args, kwargs, simplify=simplify)
+                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 942, in _generate_pdp
+    sdfg = newast.parse_dace_program(self.name,
+                                     parsed_ast,
+    ...<2 lines>...
+                                     closure,
+                                     simplify=simplify)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 241, in parse_dace_program
+    sdfg, _, _, _ = visitor.parse_program(preprocessed_ast.preprocessed_ast.body[0])
+                    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1280, in parse_program
+    self.visit_TopLevel(stmt)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/astutils.py", line 537, in visit_TopLevel
+    return self.visit(node)
+           ~~~~~~~~~~^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1254, in visit
+    result = super().visit(node)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/ast.py", line 506, in visit
+    return visitor(node)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 3526, in visit_Assign
+    self._visit_assign(node, node.targets[0], None)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 3589, in _visit_assign
+    rval = self._gettype(node.value)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 5264, in _gettype
+    operands = self.visit(opnode)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1254, in visit
+    result = super().visit(node)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/ast.py", line 506, in visit
+    return visitor(node)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 4866, in visit_Call
+    result, args = self._parse_sdfg_call(funcname, func, node)
+                   ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 4191, in _parse_sdfg_call
+    raise ex
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 4166, in _parse_sdfg_call
+    sdfg = fcopy.to_sdfg(*fargs, **fkwargs, simplify=self.simplify, save=False)
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 303, in to_sdfg
+    sdfg = self._parse(args, kwargs, simplify=simplify, save=save, validate=validate)
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 516, in _parse
+    sdfg, cached = self._generate_pdp(args, kwargs, simplify=simplify)
+                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/parser.py", line 942, in _generate_pdp
+    sdfg = newast.parse_dace_program(self.name,
+                                     parsed_ast,
+    ...<2 lines>...
+                                     closure,
+                                     simplify=simplify)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 241, in parse_dace_program
+    sdfg, _, _, _ = visitor.parse_program(preprocessed_ast.preprocessed_ast.body[0])
+                    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1280, in parse_program
+    self.visit_TopLevel(stmt)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/astutils.py", line 537, in visit_TopLevel
+    return self.visit(node)
+           ~~~~~~~~~~^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1254, in visit
+    result = super().visit(node)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/ast.py", line 506, in visit
+    return visitor(node)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 3526, in visit_Assign
+    self._visit_assign(node, node.targets[0], None)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 3589, in _visit_assign
+    rval = self._gettype(node.value)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 5264, in _gettype
+    operands = self.visit(opnode)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 1254, in visit
+    result = super().visit(node)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/ast.py", line 506, in visit
+    return visitor(node)
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 5359, in visit_BinOp
+    return self._visit_op(node, node.left, node.right)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/dace/dace/frontend/python/newast.py", line 5340, in _visit_op
+    raise DaceSyntaxError(self, node, str(ex))
+dace.frontend.python.common.DaceSyntaxError: Cannot multiply arrays with shapes: (N, 1, N, 1) and (N,)
+  encountered in File "/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py", line 56, column 9

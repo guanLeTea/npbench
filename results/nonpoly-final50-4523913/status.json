@@ -1,0 +1,881 @@
+{
+  "arc_distance": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "azimint_hist": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on azimint_hist_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 43, column 13. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/azimint_hist/azimint_hist_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "azimint_naive": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "cavity_flow": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "no result row and no recognised failure in the log",
+      "sequential": false,
+      "status": "error",
+      "variants": []
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "channel_flow": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "cholesky2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "compute": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "contour_integral": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "conv2d_bias": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "clang did not finish within 900s on conv2d_pluto.c",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "covariance": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "covariance2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "ModuleNotFoundError: No module named 'npbench.benchmarks.polybench.covariance2.covariance2_dace'",
+      "sequential": false,
+      "status": "error",
+      "variants": []
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "crc16": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "crc16_pluto_reference.c: polycc marked no loop parallel; the transformed code is tiled but single-threaded, so this row is not comparable to the parallel ones",
+      "reason": "",
+      "sequential": true,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "doitgen": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "gesummv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "go_fast": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "hdiff": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "jacobi_1d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "k2mm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "k3mm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "lenet": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc did not finish within 900s on lenet_pluto_reference.c",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "mandelbrot1": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "mandelbrot2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on mandelbrot2_pluto_reference.c: [Clan] Error: non-affine expression at line 44, column 15. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/mandelbrot2/mandelbrot2_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "mlp": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "nbody": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "  encountered in File \"/users/levwidmer/npbench/npbench/benchmarks/nbody/nbody_dace.py\", line 56, column 9",
+      "sequential": false,
+      "status": "error",
+      "variants": []
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "resnet": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "scattering_self_energies": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on scattering_self_energies_pluto_reference.c: [Clan] Error: syntax error at line 54, column 61. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/scattering_self_energies/scattering_self_energies_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "softmax": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "spmv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on spmv_pluto_reference.c: [Clan] Error: syntax error at line 26, column 19. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/spmv/spmv_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "stockham_fft": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on stockham_fft_pluto_reference.c: [Clan] Error: variable or array reference in an affine expression at line 53, column 24. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/stockham_fft/stockham_fft_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "symm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "symm_pluto_reference.c: polycc marked no loop parallel; the transformed code is tiled but single-threaded, so this row is not comparable to the parallel ones",
+      "reason": "",
+      "sequential": true,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "vadv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "ran but did not validate against the NumPy reference",
+      "sequential": false,
+      "status": "invalid",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  }
+}

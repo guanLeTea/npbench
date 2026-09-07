@@ -1,0 +1,15 @@
+preset paper -- 23 kernels x 3 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+numpy               23         0         0       0        0
+pluto               22         0         1       0        0
+dace_cpu_autoopt        23         0         0       0        0
+
+VALIDATED BUT SINGLE-THREADED (Pluto found no parallelism; tiled only):
+  durbin           pluto
+  ludcmp           pluto
+  nussinov         pluto
+
+NOT VALIDATED -- every one, with its reason:
+  adi              pluto      declined  polycc failed on adi_pluto_reference.c: [Clan] Error: syntax error at line 33, column 39. Error extracting polyhedra from source file: '/users/levwidm

@@ -1,0 +1,7 @@
+preset paper -- 31 kernels x 1 frameworks
+
+framework    validated   invalid  declined   error  missing
+--------------------------------------------------------------
+dace_cpu_autoopt        31         0         0       0        0
+
+every (kernel, framework) pair validated

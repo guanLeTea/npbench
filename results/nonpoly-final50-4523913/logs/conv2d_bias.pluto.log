@@ -1,0 +1,38 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing Pluto with conv2d_bias on the paper dataset *****
+NumPy - default - validation: 7847ms
+Traceback (most recent call last):
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 989, in compile_shared
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CLANG_TIMEOUT)
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 1220, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 2153, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 1267, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['/capstor/scratch/cscs/levwidmer/opt/llvm-17.0.6/bin/clang', '-O3', '-march=native', '-fopenmp', '-fno-math-errno', '-fno-trapping-math', '-fno-signed-zeros', '-fstrict-aliasing', '-fPIC', '-shared', '-o', '/capstor/scratch/cscs/levwidmer/m-verify-4523913/pluto-rank-0/conv2d_bias/libconv2d_pluto.so.tmp', '/capstor/scratch/cscs/levwidmer/m-verify-4523913/pluto-rank-0/conv2d_bias/conv2d_pluto.c', '-lm']' timed out after 900 seconds
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/users/levwidmer/npbench/run_benchmark.py", line 57, in <module>
+    test.run(args["preset"], args["validate"], args["repeat"], args["timeout"])
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/test.py", line 91, in run
+    for impl, impl_name in self.frmwrk.implementations(self.bench):
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 1085, in implementations
+    compile_shared(transformed, so, openmp=not racy, libs=link_libraries(source_text))
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 991, in compile_shared
+    raise PlutoUnavailable("clang did not finish within {t}s on {s}".format(t=CLANG_TIMEOUT, s=source.name))
+npbench.infrastructure.pluto_framework.PlutoUnavailable: clang did not finish within 900s on conv2d_pluto.c

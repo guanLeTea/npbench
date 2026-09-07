@@ -1,0 +1,9 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing Pluto with nussinov on the paper dataset *****
+NumPy - default - validation: 7126ms
+PlutoSequential: nussinov: polycc's transformation is correct but its `omp parallel for` is not, so the unmodified transform is compiled without -fopenmp and runs single-threaded. polycc marks the tiled `i` loop `#pragma omp parallel for`, but nussinov's `table[i][j] = max(table[i][j], table[i][k] + table[k+1][j])` reads row k+1 while another thread is still writing it. Measured against the untransformed reference compiled directly, N=200: 0/20 runs differ on 1 thread, 20/20 differ on 8 threads and 20/20 on 32. The sequential result is exact, so the transformation itself is sound and only the parallel decoration is wrong.
+Pluto - pluto - first/validation: 11ms
+Pluto - pluto - pluto - validation: SUCCESS
+Pluto - pluto - median: 11ms

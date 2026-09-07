@@ -1,0 +1,343 @@
+{
+  "arc_distance": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "azimint_hist": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "azimint_naive": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "cavity_flow": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "channel_flow": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "cholesky2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "compute": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "contour_integral": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "conv2d_bias": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "covariance": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "covariance2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "crc16": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "doitgen": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "gesummv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "go_fast": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "hdiff": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "jacobi_1d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "k2mm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "k3mm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "lenet": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "mandelbrot1": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "mandelbrot2": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "mlp": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "nbody": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "resnet": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "scattering_self_energies": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "softmax": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "spmv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "stockham_fft": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "symm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  },
+  "vadv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    }
+  }
+}

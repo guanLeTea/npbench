@@ -1,0 +1,37 @@
+/users/levwidmer/npbench/npbench/infrastructure/framework.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: JAX is not installed. Please install JAX to run benchmarks with the JAX framework.
+***** Testing Pluto with lenet on the paper dataset *****
+NumPy - default - validation: 1466ms
+Traceback (most recent call last):
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 904, in run_polycc
+    stdout, stderr = popen.communicate(timeout=POLYCC_TIMEOUT)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 1220, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 2153, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/user-environment/linux-neoverse_v2/python-3.14.3-nc4zeaoe75gd75xej7gsuzcmtx4gic6a/lib/python3.14/subprocess.py", line 1267, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['/capstor/scratch/cscs/levwidmer/opt/pluto/bin/polycc', '--tile', '--parallel', '--codegen-context=1', '/users/levwidmer/npbench/npbench/benchmarks/deep_learning/lenet/lenet_pluto_reference.c', '-o', '/capstor/scratch/cscs/levwidmer/m-verify-4523913/pluto-rank-3/lenet/npbench-polycc-ncj8dm9w/lenet_pluto.c']' timed out after 900 seconds
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/users/levwidmer/npbench/run_benchmark.py", line 57, in <module>
+    test.run(args["preset"], args["validate"], args["repeat"], args["timeout"])
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/test.py", line 91, in run
+    for impl, impl_name in self.frmwrk.implementations(self.bench):
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 1076, in implementations
+    run_polycc(source, transformed)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/users/levwidmer/npbench/npbench/infrastructure/pluto_framework.py", line 914, in run_polycc
+    raise PlutoUnavailable("polycc did not finish within {t}s on {r}".format(t=POLYCC_TIMEOUT,
+                                                                             r=reference.name))
+npbench.infrastructure.pluto_framework.PlutoUnavailable: polycc did not finish within 900s on lenet_pluto_reference.c

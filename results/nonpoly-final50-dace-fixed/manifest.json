@@ -1,0 +1,20 @@
+{
+ "derived": true,
+ "what": "NumPy and Pluto rows from the base campaign; every DaCe row re-measured at a newer DaCe revision. This is a derived comparison dataset, not a single Slurm campaign.",
+ "built": "2026-08-23T15:57:32.475382+02:00",
+ "numpy_pluto_source_job": "4523913",
+ "numpy_pluto_source_dir": "results/nonpoly-final50-4523913",
+ "dace_source_job": "4525319",
+ "dace_source_dir": "results/nonpoly-dace50-4525319",
+ "dace_revision_old": "eb7b1352a09298451eb8c65b937d0c102dc2cfae",
+ "dace_revision_new": "b27aaed2f8456674e29c57a0a6115643bb2ae4c2",
+ "npbench_revision_base": "d86cc06b2352d9edf23a7b7eb1a3d5e8cd5c3a97",
+ "npbench_revision_dace": "d19133b440a33ff92aa1ccb6adfabccc94d8ff21",
+ "preset": "paper",
+ "repeat": 50,
+ "kernels": 31,
+ "frameworks": "numpy pluto dace_cpu_autoopt",
+ "ranks": 4,
+ "cpus_per_task": 72,
+ "dace_rows_replaced": "all 31 (complete DaCe re-measurement, not a four-row patch)"
+}

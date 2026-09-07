@@ -1,0 +1,90 @@
+kernel           framework             n       median          IQR  IQR/med   max/min
+------------------------------------------------------------------------------------
+k2mm             dace_cpu_autoopt     50     0.088970     0.000386     0.4%     1.02x
+k2mm             numpy                50     0.167778     0.022382    13.3%     1.88x  <-- unstable
+k2mm             pluto                50     1.891374     0.005762     0.3%     1.01x
+k3mm             dace_cpu_autoopt     50     0.161205     0.003332     2.1%     1.52x
+k3mm             numpy                50     0.177659     0.000909     0.5%     1.05x
+k3mm             pluto                50     2.759507     0.014368     0.5%     1.02x
+arc_distance     dace_cpu_autoopt     50     0.009273     0.000196     2.1%     1.76x
+arc_distance     numpy                50     0.463107     0.003027     0.7%     1.02x
+arc_distance     pluto                50     0.007821     0.000445     5.7%     1.25x
+azimint_hist     dace_cpu_autoopt     50     0.003792     0.000064     1.7%     1.05x
+azimint_hist     numpy                50     0.014825     0.000475     3.2%     1.14x
+azimint_naive    dace_cpu_autoopt     50     0.010227     0.000707     6.9%     1.30x
+azimint_naive    numpy                50     0.491334     0.011531     2.3%     1.45x
+azimint_naive    pluto                50     0.092115     0.000401     0.4%     1.01x
+cavity_flow      dace_cpu_autoopt     50     0.935562     0.011401     1.2%     1.08x
+cavity_flow      numpy                50     1.612889     0.004572     0.3%     1.07x
+cavity_flow      pluto                50     0.970787     0.010560     1.1%     1.04x
+channel_flow     dace_cpu_autoopt     50     2.400151     0.040967     1.7%     1.07x
+channel_flow     numpy                50     2.862318     0.040594     1.4%     1.08x
+channel_flow     pluto                50     0.985813     0.013649     1.4%     1.16x
+cholesky2        dace_cpu_autoopt     50     0.013186     0.000189     1.4%     1.15x
+cholesky2        numpy                50     0.021811     0.000365     1.7%     1.08x
+cholesky2        pluto                50     0.046553     0.000305     0.7%     1.02x
+compute          dace_cpu_autoopt     50     0.090183     0.040765    45.2%     2.31x  <-- unstable
+compute          numpy                50     0.436057     0.004951     1.1%     2.57x  <-- unstable
+compute          pluto                50     0.091503     0.009454    10.3%     1.68x  <-- unstable
+contour_integral dace_cpu_autoopt     50     0.213771     0.002552     1.2%     1.28x
+contour_integral numpy                50     0.491976     0.017490     3.6%     1.11x
+contour_integral pluto                50    12.651954     0.370787     2.9%     1.17x
+conv2d_bias      dace_cpu_autoopt     50     0.199262     0.000354     0.2%     1.13x
+conv2d_bias      numpy                50     7.585420     0.028522     0.4%     1.06x
+covariance       dace_cpu_autoopt     50     0.037223     0.000166     0.4%     1.05x
+covariance       numpy                50     0.028033     0.000169     0.6%     1.05x
+covariance       pluto                50     0.009755     0.000094     1.0%     1.09x
+covariance2      dace_cpu_autoopt     50     0.040365     0.001996     4.9%     1.12x
+covariance2      numpy                50     0.005535     0.000102     1.8%     1.20x
+covariance2      pluto                50     0.009474     0.000094     1.0%     1.04x
+crc16            dace_cpu_autoopt     50     0.012371     0.000033     0.3%     1.02x
+crc16            numpy                50     1.413523     0.001190     0.1%     1.03x
+crc16            pluto                50     0.008416     0.000037     0.4%     1.01x
+doitgen          dace_cpu_autoopt     50     0.005129     0.000187     3.6%     1.14x
+doitgen          numpy                50     0.238647     0.009948     4.2%     1.10x
+doitgen          pluto                50     1.618400     0.024205     1.5%     1.06x
+gesummv          dace_cpu_autoopt     50     0.019265     0.001635     8.5%     1.21x
+gesummv          numpy                50     0.197264     0.003584     1.8%     3.08x  <-- unstable
+gesummv          pluto                50     0.007369     0.000152     2.1%     3.09x  <-- unstable
+hdiff            dace_cpu_autoopt     50     0.004447     0.000189     4.3%     1.57x
+hdiff            numpy                50     0.152584     0.001588     1.0%     1.03x
+hdiff            pluto                50     0.023803     0.000116     0.5%     1.02x
+jacobi_1d        dace_cpu_autoopt     50     0.081779     0.000258     0.3%     1.06x
+jacobi_1d        numpy                50     0.257887     0.008318     3.2%     1.16x
+jacobi_1d        pluto                50     0.013996     0.010342    73.9%     3.86x  <-- unstable
+lenet            dace_cpu_autoopt     50     0.004971     0.000112     2.3%     1.17x
+lenet            numpy                50     1.457003     0.013815     0.9%     1.04x
+mandelbrot1      dace_cpu_autoopt     50     0.011325     0.000097     0.9%     2.15x  <-- unstable
+mandelbrot1      numpy                50     0.877756     0.002567     0.3%     1.05x
+mandelbrot1      pluto                50     0.075980     0.009345    12.3%     1.71x  <-- unstable
+mandelbrot2      dace_cpu_autoopt     50     0.487494     0.006632     1.4%     1.34x
+mandelbrot2      numpy                50     0.365503     0.006610     1.8%     1.05x
+mlp              dace_cpu_autoopt     50     0.009656     0.001727    17.9%     2.08x  <-- unstable
+mlp              numpy                50     0.023658     0.011013    46.6%     5.79x  <-- unstable
+mlp              pluto                50     1.292536     0.003552     0.3%     1.03x
+nbody            dace_cpu_autoopt     50     0.079486     0.000461     0.6%     1.02x
+nbody            numpy                50     0.297844     0.009024     3.0%     1.18x
+nbody            pluto                50     0.193752     0.001404     0.7%     1.02x
+go_fast          dace_cpu_autoopt     50     0.082818     0.007067     8.5%     1.55x
+go_fast          numpy                50     0.108615     0.001246     1.1%     4.48x  <-- unstable
+go_fast          pluto                50     0.078131     0.008741    11.2%     1.44x  <-- unstable
+resnet           dace_cpu_autoopt     50     0.022685     0.000207     0.9%     2.92x  <-- unstable
+resnet           numpy                50     1.542567     0.113186     7.3%     1.27x
+resnet           pluto                50     4.524463     0.027335     0.6%     1.03x
+softmax          dace_cpu_autoopt     50     0.071603     0.002678     3.7%     1.18x
+softmax          numpy                50     0.831347     0.002468     0.3%     2.22x  <-- unstable
+softmax          pluto                50     0.822113     0.010836     1.3%     1.27x
+spmv             dace_cpu_autoopt     50     0.000223     0.000018     8.2%     2.07x  <-- unstable
+spmv             numpy                50     0.237833     0.000864     0.4%     1.08x
+scattering_self_energies dace_cpu_autoopt     50     0.233128     0.000327     0.1%     1.01x
+scattering_self_energies numpy                50     1.060132     0.001036     0.1%     1.01x
+stockham_fft     dace_cpu_autoopt     50     0.132523     0.010615     8.0%     1.31x
+stockham_fft     numpy                50     0.095479     0.001245     1.3%     3.08x  <-- unstable
+symm             dace_cpu_autoopt     50     0.051439     0.000661     1.3%     1.10x
+symm             numpy                50     7.274203     4.622355    63.5%     2.60x  <-- unstable
+symm             pluto                50     1.018621     0.003125     0.3%     1.05x
+vadv             dace_cpu_autoopt     50     0.207064     0.006895     3.3%     1.13x
+vadv             numpy                50     0.544392     0.020109     3.7%     1.06x
+vadv             pluto                50     0.047882     0.000527     1.1%     1.08x
+
+18 of 86 validated (kernel, framework) pairs flagged unstable (IQR/median > 10% or max/min > 2.0x)

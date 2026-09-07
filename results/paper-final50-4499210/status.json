@@ -1,0 +1,667 @@
+{
+  "adi": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "polycc failed on adi_pluto_reference.c: [Clan] Error: syntax error at line 33, column 39. Error extracting polyhedra from source file: '/users/levwidmer/npbench/npbench/benchmarks/polybench/adi/adi_pluto_reference.c'",
+      "sequential": false,
+      "status": "declined",
+      "variants": []
+    }
+  },
+  "atax": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "bicg": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "cholesky": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "correlation": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "deriche": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "durbin": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "durbin_pluto_reference.c: polycc marked no loop parallel; the transformed code is tiled but single-threaded, so this row is not comparable to the parallel ones",
+      "reason": "",
+      "sequential": true,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "fdtd_2d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "floyd_warshall": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "gemm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "gemver": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "gramschmidt": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "heat_3d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "jacobi_2d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "lu": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "ludcmp": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "ludcmp_pluto_reference.c: polycc marked no loop parallel; the transformed code is tiled but single-threaded, so this row is not comparable to the parallel ones",
+      "reason": "",
+      "sequential": true,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "mvt": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "nussinov": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "nussinov: polycc's transformation is correct but its `omp parallel for` is not, so the unmodified transform is compiled without -fopenmp and runs single-threaded. polycc marks the tiled `i` loop `#pragma omp parallel for`, but nussinov's `table[i][j] = max(table[i][j], table[i][k] + table[k+1][j])` ",
+      "reason": "",
+      "sequential": true,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "seidel_2d": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "syr2k": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "syrk": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "trisolv": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  },
+  "trmm": {
+    "dace_cpu_autoopt": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "auto_opt"
+      ]
+    },
+    "numpy": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "default"
+      ]
+    },
+    "pluto": {
+      "note": "",
+      "reason": "",
+      "sequential": false,
+      "status": "validated",
+      "variants": [
+        "pluto"
+      ]
+    }
+  }
+}
