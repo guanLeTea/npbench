@@ -1,215 +1,159 @@
-# NPBench on CSCS Daint/Alps
+# Benchmark campaigns on CSCS Daint/Alps
 
-## Campaign base
+Everything here is site-specific: the uenv name, the scratch paths and the Slurm account are
+Daint's. Nothing in this directory is upstream NPBench.
 
-The M campaign runs on branch **`bench/daint-pluto`**, which is
-**spcl/npbench PR #47** (`fix/well-conditioned-gramschmidt-and-zeros-init`, tip `3944369`)
-with our three commits rebased on top. PR #47's base is upstream `main` at `f2d7f27`.
+A campaign runs a set of NPBench kernels across three frameworks on one node, validates every
+result against the NumPy reference, and turns the raw timings into the statistics and figures
+reported in the thesis.
 
-**Not plain `main`.** PR #47 makes the benchmark inputs deterministic and well-conditioned,
-which is a precondition for comparable numbers:
-
-| Change | Kernels |
-|---|---|
-| `np.empty` -> `np.zeros` in the input generator | `cholesky`, `cholesky2`, `lu`, `ludcmp`, `symm` |
-| `np.empty_like` -> `np.zeros_like` inside the kernel | `deriche` (y1, y2), `durbin` (y) |
-| deterministic well-conditioned input (replaces a nondeterministic `while matrix_rank(A) < N` resample) | `gramschmidt` |
-| input drawn from the seeded generator | `mlp` |
-| new `dace_canonicalize_cpu` / `dace_canonicalize_gpu` columns | — |
-| `openmp_array_reductions = False` pinned for `dace_cpu`/`dace_gpu` | — |
-
-Two commits in PR #47 (`c77d0f4`, `3944369`) also rename kernel functions in `pythran`,
-`numba_np`, `legate` and `dask` variants. None of those columns is in this campaign, and no
-`_numpy.py` or `_dace.py` file is touched by them.
-
-**Known wart in PR #47:** commit `3944369` also commits a 45 KB `npbench.db` (155 numpy/numba
-rows from another machine) into the repo root. NPBench *appends* to whatever `npbench.db` it
-finds in the CWD, so an interactive run started from the repo root would mix those rows into
-its own. The launcher is unaffected -- every rank runs from its own directory -- but the file
-should be deleted before it causes confusion.
-
-
-Everything in this directory is site-specific: the uenv name, the scratch paths and the account are
-Daint's. Nothing here is upstream NPBench.
+```
+run_campaign.sbatch          one node, 4 ranks x 72 CPUs, one kernel list
+  -> npbench-env.sh          uenv + venv + clang/polycc on PATH
+  -> run_benchmark.py        per (kernel, framework), validated against NumPy
+  -> rank-N/npbench.db       one database per rank
+  -> merge_db.py             -> npbench.db
+  -> collect_status.py       -> status.json, summary.txt   (why a cell is empty)
+  -> plot_m_verify.py        -> m-verify-<job>.pdf         (coverage overview)
+  -> stats.py                -> stats.json, stats.csv      (REPEAT > 1 only)
+  -> dispersion.py           -> dispersion.json            (REPEAT > 1 only)
+  -> plot_thesis.py          -> <campaign>-<job>-thesis.pdf + -p1/-p2 .png
+```
 
 ## Environment
 
-The base interpreter, GCC, cmake and OpenBLAS all come from the `prgenv-gnu/26.3:v1` uenv. The
-repo-local venv is built on top of it, so it only works with that uenv mounted.
+`npbench-env.sh` activates the repo venv, puts `clang` and `polycc` on PATH, pins the compiler
+DaCe hands to CMake, and refuses to continue if any of that is missing. It deliberately does not
+set thread counts -- that depends on how many ranks split the node, so it belongs to the launcher.
 
-```bash
-uenv start --view=default prgenv-gnu/26.3:v1
-source ~/npbench/slurm/npbench-env.sh
-```
-
-In a batch job, request the uenv from Slurm instead of starting it first — that way the mount
-reaches the batch step *and* every nested `srun` step:
+Request the uenv from Slurm, so the mount reaches the batch step *and* every nested `srun`:
 
 ```bash
 #SBATCH --uenv=prgenv-gnu/26.3:v1
 #SBATCH --view=default
 ```
 
-`npbench-env.sh` activates the venv, puts clang and `polycc` on PATH, pins the compiler DaCe hands
-to CMake, and refuses to continue if any of that is missing. It deliberately does **not** set thread
-counts — that depends on how many ranks are splitting the node, so it belongs to the launcher.
+Overridable: `NPBENCH_ENV_REPO`, `NPBENCH_ENV_LLVM_PREFIX`, `NPBENCH_ENV_PLUTO_BIN`.
 
-### What is installed
+NumPy uses the `scipy-openblas` build bundled in its wheel; DaCe- and Pluto-generated C link the
+uenv's OpenBLAS. That bundled build carries `MAX_THREADS=64`, so a rank given 72 CPUs runs NumPy's
+BLAS on at most 64 of them.
 
-`~/npbench/.venv`, created from the uenv's Python 3.14.3:
+## Running a campaign
 
-| Package | Version | Why |
+`run_campaign.sbatch` is the launcher for every campaign below. It is configured entirely through
+the environment; the script itself is not edited per run.
+
+| variable | meaning | default |
 |---|---|---|
-| numpy | 2.5.2 | the baseline column |
-| scipy, pandas, matplotlib, pygount | | `requirements.txt` |
-| setuptools | **< 81** | NPBench imports `pkg_resources`, removed in setuptools 81 |
-| dace | 2.0.0a5, **editable** from `~/dace` | the DaCe column |
+| `CAMPAIGN` | result directory name, `results/<CAMPAIGN>-<job>` | derived from `REPEAT` |
+| `PRESET` | NPBench data-size preset | `M` |
+| `REPEAT` | timed executions per pair; `> 1` enables statistics and the thesis report | `1` |
+| `TIMEOUT` | per-pair execution timeout, seconds | `600` |
+| `FRAMEWORKS` | frameworks to run | `numpy pluto dace_cpu_autoopt` |
+| `KERNELS_FILE` | kernel list; default is every kernel carrying a tracked scop | generated |
+| `CATEGORIES` | kernel grouping for the thesis figure | PolyBench's own |
+| `THESIS_TITLE` | title on the figures | PolyBench wording |
+| `DACE_TREE` | DaCe checkout to stamp on every row | `$HOME/dace` |
 
-`setuptools<81` is a pin, not an accident. `npbench/infrastructure/framework.py` and
-`dace_framework.py` call `pkg_resources.get_distribution(...)`; pinning keeps the repo unmodified.
+The namespace is refused if it already holds artifacts: NPBench *appends* to whatever
+`npbench.db` it finds, so a reused directory would silently mix two campaigns.
 
-DaCe is an **editable** install of `~/dace`, so whichever branch that tree is on is the DaCe that
-runs. `npbench-env.sh` prints the branch in its banner. Check it before a measurement and stamp the
-answer on the run — a `dace_cpu` row does not record which tree produced it.
+`REPEAT=1` is a verification run. A median over one sample is that sample, so no statistics or
+thesis report are produced.
 
-### BLAS
+## The two final thesis campaigns
 
-NumPy's wheel carries its own `scipy-openblas` 0.3.34, built `DYNAMIC_ARCH` and correctly selecting
-the `neoversev2` kernels on Grace. It is left alone; nothing is rebuilt against the uenv's OpenBLAS
-0.3.30, and no second BLAS is installed. Note `MAX_THREADS=64` in that build: a rank given 72 CPUs
-runs BLAS on at most 64 of them.
-
-The uenv's OpenBLAS is what DaCe-generated and Pluto-generated C link against.
-
-## Running
+**23 PolyBench-derived kernels** (job 4499210). No `KERNELS_FILE` is given: the launcher derives
+the list from the tree, taking every kernel under `npbench/benchmarks/polybench` that carries a
+tracked `<kernel>_pluto_reference.c`. That yielded 23 on the branch this campaign ran from; a
+branch which has since added scops for further PolyBench-family kernels yields more, so pass an
+explicit `KERNELS_FILE` to reproduce exactly these 23.
 
 ```bash
-python run_benchmark.py -b <benchmark> -f <framework> -p <preset> -r <repeat>
-python run_framework.py  -f <framework> -p <preset>          # every benchmark
+CAMPAIGN=paper-final50 PRESET=paper REPEAT=50 \
+sbatch -A <project> --output=results/paper-final50-%j/slurm-%j.out slurm/run_campaign.sbatch
 ```
 
-Frameworks: `numpy`, `dace_cpu`, `dace_canonicalize_cpu`, `pluto`. `dace_cpu` builds and times
-three SDFG variants per kernel (`fusion`, `parallel`, `auto_opt`) and records all three;
-`dace_canonicalize_cpu` (from PR #47) times the fork's canonicalize pipeline as one variant and
-turns ON OpenMP array-section reductions, which `dace_cpu` deliberately leaves off.
+**31 additional NPBench kernels** (job 4523913) -- the complement of the 23 above.
 
-Every non-NumPy column is validated against the NumPy reference on its first execution; the verdict
-is stored per row in the `validated` column of `npbench.db`.
+```bash
+CAMPAIGN=nonpoly-final50 PRESET=paper REPEAT=50 TIMEOUT=900 \
+KERNELS_FILE=slurm/kernels_nonpolybench.txt \
+CATEGORIES=slurm/categories_nonpolybench.json \
+NPBENCH_PLUTO_POLYCC_TIMEOUT=900 NPBENCH_PLUTO_CLANG_TIMEOUT=900 \
+sbatch -A <project> --output=results/nonpoly-final50-%j/slurm-%j.out slurm/run_campaign.sbatch
+```
 
-## Pluto coverage
+The two Pluto build limits cap polycc and clang separately, so a kernel that exceeds one is
+recorded as a build timeout at the stage that timed out rather than blocking the corpus.
 
-The Pluto column transforms the **original PolyBench/C 4.2.1 kernel**, tracked beside each NumPy
-port as `npbench/benchmarks/polybench/<kernel>/<kernel>_pluto_reference.c` (23 files). NPBench's own
-kernels are NumPy ports of those same PolyBench kernels, so the pair measures the same computation
-from the two sources it actually has.
+Job 4499210 predates the statistics and report steps being wired into the launcher; its
+`stats.json` and thesis PDF were produced afterwards by running `stats.py` and `plot_thesis.py`
+against its result directory. Its extended report adds the per-kernel distribution pages:
 
-Correctness is not assumed from that shared ancestry — every row is validated against the NumPy
-reference, and that check is load-bearing here: `jacobi_2d` and `seidel_2d`'s ports sweep one fewer
-timestep than the PolyBench originals (corrected in `ARG_OVERRIDES`), and `floyd_warshall` is an
-`int32` kernel where the rest are `float64`.
+```bash
+python slurm/plot_thesis.py --db <dir>/npbench.db --status <dir>/status.json \
+    --kernels <dir>/kernels.txt --preset paper --repeat 50 \
+    --dace-framework dace_cpu_autoopt --stats <dir>/stats.json --extra-violins \
+    --output <dir>/<campaign>-<job>-thesis-extended.pdf \
+    --png-prefix <dir>/<campaign>-<job>-thesis-extended
+```
 
-**Working — 13 of 23**, every one validated against its NumPy reference:
-`cholesky`, `floyd_warshall`, `gemm`, `gemver`, `heat_3d`, `jacobi_2d`, `lu`, `mvt`, `seidel_2d`,
-`syr2k`, `syrk`, `trisolv`, `trmm`.
+## Correctness gating
 
-The remaining 10 are **all blocked upstream in Pluto**, not by missing adapters. The adapters were
-written (`PLUTO_ADAPTERS` covers output buffers, inlined constants and non-extent symbols) and they
-are correct — the kernels still fail because `polycc` miscompiles or crashes on their scops.
+Every non-NumPy result is validated against the NumPy reference on its first execution and the
+verdict is stored per row. A speedup is drawn only from a validated row; declined, crashed,
+timed-out and unvalidated pairs stay empty in the figures and are explained on page 2 of the
+report. `stats.py` reads validated rows only. Nothing falls back to untransformed code.
 
-### Two Pluto defects, and why they are declines rather than workarounds
+## Kernel selection
 
-**1. Dropped statements (6 kernels).** pet models a temporary declared inside the function —
-`atax`'s `tmp[M]`, `gramschmidt`'s scalar `nrm`, `deriche`'s `y1`/`y2` — as scop-local, and Pluto
-then eliminates the statements that write it because nothing *outside* the scop reads it. The
-scop's own later statements do. The emitted code reads an uninitialized buffer and returns
-denormal noise or NaN.
-
-This is the dangerous one: it compiles clean, runs fast, and is wrong. `_dropped_writes()` compares
-the scop's write set against the generated file's and declines on any difference.
-
-**2. Integer-literal overflow (2 kernels).** Pluto's scheduler produces coefficients that overflow
-`int64` and prints them into the loop bounds. In `fdtd_2d` clang rejects them outright. In `bicg`
-the literal lands inside a guard — `if (9223372036854775808*N >= -M+1)` — which compiles with only
-a warning, is undefined at runtime, and **skips the guarded loop**, so the kernel returns its
-untouched input. `_int64_overflow_literals()` catches both before anything is compiled.
-
-| Kernel | Cause |
+| file | contents |
 |---|---|
-| `atax`, `gramschmidt`, `durbin`, `correlation`, `deriche`, `adi` | dropped statements (defect 1) |
-| `bicg`, `fdtd_2d` | int64 literal overflow (defect 2) |
-| `ludcmp` | `polycc` aborts on an internal assertion in `pluto_auto_transform` |
-| `nussinov` | `polycc` corrupts its own heap (`double free or corruption`) and then hangs |
+| `kernels_nonpolybench.txt` | the 31 NPBench kernels outside the PolyBench-derived 23, keyed by `bench_info` stem (`conv2d_bias`, not `conv2d`) |
+| `categories_nonpolybench.json` | groups those 31 by program structure for the figure's row order |
 
-Tried and rejected: `--lastwriter` / `--nolastwriter` / dropping `--tile` change nothing for defect
-1. Hoisting `atax`'s `tmp` into the signature (which is what PolyBench upstream actually does) fixes
-defect 1 for it — and then it hits defect 2 instead.
+The 23-kernel list is not stored: the launcher derives it from the tracked scops, so it cannot
+drift from what the Pluto column can be asked about.
 
-**`adi` is additionally a semantic divergence** and would stay blocked even if Pluto were fixed:
-NPBench's port computes `b = 1.0 + mul2` where PolyBench computes `b = 1.0 + mul1`. With the shared
-initialization those are 81 vs 161 — a different linear system, not a rounding difference.
+## Statistics
 
-### Rules this column holds to
+`stats.py` reports, per validated pair: median, IQR, and a 95% moving-block bootstrap CI of the
+median (block 6, 10000 resamples, seed 20260817), with no outlier removal. The block bootstrap is
+used because the samples are sequential and many pairs show lag-1 autocorrelation or drift, which
+an IID bootstrap would understate. Both intervals are written so the choice stays visible.
+`dispersion.py` flags pairs whose spread makes a median unreliable.
 
-- A kernel that cannot be mapped is **declined outright**, never mapped approximately: a positional
-  `ctypes` call cannot detect a permuted or mistyped argument list, so a wrong mapping runs and
-  returns plausible numbers.
-- polycc's output is **inspected and rejected, never edited**. Repairing a dropped statement by hand
-  would mean timing something Pluto did not produce.
-- `polycc` and `clang` run under a 300s timeout, so a Pluto that hangs cannot consume a campaign's
-  allocation.
-- `utilities.validate` compares with `zip(ref, val)`, which **truncates to the shorter list**. A
-  kernel whose port returns its result and whose `output_args` is empty would, if this column
-  returned `None`, be "validated" by comparing zero pairs. Any such benchmark that does not declare
-  `returns` in its adapter is declined.
+## Derived datasets
 
-## Reproducibility
+`build_combined_dataset.py` assembles a dataset whose frameworks come from different campaigns.
+It produced `results/nonpoly-final50-dace-fixed`, which is **derived, not a single Slurm campaign**:
 
-DaCe is an editable install, so its version string (`2.0.0a5`) is identical across branches and
-commits and cannot identify what ran. Two things fix that:
-
-- **Per row.** `DaceFramework.version()` appends `+<branch>@<commit>` (and `-dirty` when the tree has
-  uncommitted changes), so the `version` column of `npbench.db` reads
-  `2.0.0a5+extended@eb7b1352a`. `NPBENCH_DACE_BUILD` overrides the probe for a non-git tree.
-- **Per campaign.** Each job writes `manifest.json` into its results namespace: both git commits,
-  compiler versions, polycc version, node and preset.
-
-Result namespaces are keyed on the Slurm job id and the launcher **refuses to start** if one already
-exists — NPBench *appends* to whatever `npbench.db` it finds, so a reused namespace silently mixes
-two runs into one database.
-
-## Per-rank state (read before writing a launcher)
-
-NPBench writes its results to **`npbench.db` relative to the current working directory**
-(`infrastructure/test.py`, `infrastructure/line_count.py`). Several ranks sharing a working
-directory means several processes writing one SQLite file. Give each rank its own directory and
-merge afterwards with `merge_db.py`. Nothing else depends on the CWD: `run_benchmark.py` puts its
-own directory on `sys.path`, and `bench_info` / `framework_info` / the kernel sources are all
-resolved from `__file__`.
-
-Two more per-rank directories are required:
-
-- `DACE_default_build_folder` — DaCe derives an SDFG's build folder from its **name**, and NPBench
-  names every variant identically on every kernel (`fusion`, `parallel`, `auto_opt`). One shared
-  folder has every rank overwriting one `libauto_opt.so`.
-- `NPBENCH_PLUTO_BUILD_DIR` — same hazard with `lib<kernel>_pluto.so`.
-
-## CPU affinity
-
-`--cpus-per-task` must be spelled on the `#SBATCH` line **and** passed explicitly to `srun`. Slurm
-25.05 does not propagate it into the step (that implicit inheritance went away in 22.05). Without it
-on the `srun` line, `cpus-per-task` defaults to 1 and `--cpu-bind=cores` pins each rank to a single
-core while the rank still starts a full thread pool. The result looks like a measurement and is not.
-
-Each rank sizes its thread pool from `SLURM_CPUS_PER_TASK`, never from `nproc` — `nproc` reports the
-whole node, so every rank would oversubscribe it by the rank count.
-
-A Daint node is 4 Grace sockets, 72 cores each, 288 total. 4 ranks × 72 gives one socket per rank;
-`slurm/verify_small.sbatch` confirmed the ranks land on `0-71`, `72-143`, `144-215`, `216-287`.
-
-## Files
-
-| File | What it does |
+| rows | source campaign |
 |---|---|
-| `npbench-env.sh` | sourced by every job; venv + toolchain + fatal preflight |
-| `verify_small.sbatch` | setup check: numpy/pluto/dace_cpu, preset S, 7 kernels, 1 node |
-| `merge_db.py` | merge per-rank `npbench.db` shards; `--summarize` prints validation + means |
+| NumPy, Pluto | `results/nonpoly-final50-4523913` (job 4523913) |
+| DaCe `auto_opt`, all 31 kernels | `results/nonpoly-dace50-4525319` (job 4525319) |
+
+The DaCe column was re-measured in full at a newer DaCe revision and swapped in whole rather than
+patched per kernel, so it stays internally consistent at one revision; NumPy and Pluto are
+unchanged. Both source job ids and both DaCe revisions are written into the output, because such a
+dataset is not reproducible from any single Slurm job. Both source directories are kept so the
+combination can be rebuilt:
+
+```bash
+python slurm/build_combined_dataset.py \
+    results/nonpoly-final50-4523913 results/nonpoly-dace50-4525319 <out>
+```
+
+then regenerate statistics and figures from `<out>` with `stats.py`, `dispersion.py` and
+`plot_thesis.py`, exactly as for a real campaign.
+
+## Supporting tooling
+
+Not part of the final results; kept because each answers a question the thesis relies on.
+
+| file | purpose |
+|---|---|
+| `verify_small.sbatch` | setup check: all three columns build, run and validate on a compute node at preset S, with the campaign's affinity |
+| `verify_autoopt.sbatch`, `compare_autoopt.py` | equivalence check that `dace_cpu_autoopt` reproduces the `auto_opt` rows of the stock `dace_cpu`, which is what justifies using it as the DaCe column |

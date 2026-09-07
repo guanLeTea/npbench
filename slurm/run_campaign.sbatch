@@ -6,7 +6,7 @@
 # single sample and no ranking should be read off it. What it establishes is that all three
 # columns build, run and VALIDATE at preset M, and what each Pluto decline actually is.
 #
-#   sbatch -A g34 ~/npbench/slurm/m_verify.sbatch
+#   sbatch -A <project> ~/npbench/slurm/run_campaign.sbatch
 #
 # Overridable: PRESET, REPEAT, TIMEOUT, FRAMEWORKS, KERNELS_FILE.
 #
@@ -86,7 +86,7 @@ if [[ ! "${KERNELS_FILE}" -ef "${NS}/kernels.txt" ]]; then
 fi
 NK=$(wc -l < "${NS}/kernels.txt")
 
-DACE_TREE="${DACE_TREE:-/users/levwidmer/dace}"
+DACE_TREE="${DACE_TREE:-${HOME}/dace}"
 {
     echo "{"
     echo "  \"campaign\": \"${CAMPAIGN}\", \"job\": \"${JOB}\","
@@ -187,6 +187,35 @@ python "${REPO}/slurm/plot_m_verify.py" --db "${NS}/npbench.db" --status "${NS}/
     --dace-framework "${DACE_FRAMEWORK:-dace_cpu_autoopt}" \
     --output "${NS}/m-verify-${JOB}.pdf"
 
+# A repeated campaign is the one that can carry statistics, so it also produces the thesis
+# report. REPEAT=1 is a verification run: a median over one sample is that sample, and a
+# bootstrap CI over it is meaningless, so neither is generated there.
+#
+# `--no-page3`: the distributions page draws VIOLIN_KERNELS, which names PolyBench kernels.
+# On a corpus that does not contain them the page would come out blank. stats.json and
+# stats.csv are written regardless, so distribution pages can be produced afterwards from the
+# stored samples without re-running the campaign.
+if [[ "${REPEAT}" -gt 1 ]]; then
+    echo ""
+    echo "=== statistics (median / IQR / 95% moving-block bootstrap CI, validated rows only) ==="
+    python "${REPO}/slurm/stats.py" --db "${NS}/npbench.db" --preset "${PRESET}" \
+        --kernels "${NS}/kernels.txt" \
+        --json "${NS}/stats.json" --csv "${NS}/stats.csv"
+    python "${REPO}/slurm/dispersion.py" --db "${NS}/npbench.db" --preset "${PRESET}" \
+        --kernels "${NS}/kernels.txt" --json "${NS}/dispersion.json" > "${NS}/dispersion.txt" 2>&1 || true
+
+    echo ""
+    echo "=== thesis report ==="
+    python "${REPO}/slurm/plot_thesis.py" --db "${NS}/npbench.db" --status "${NS}/status.json" \
+        --kernels "${NS}/kernels.txt" --preset "${PRESET}" --repeat "${REPEAT}" \
+        --dace-framework "${DACE_FRAMEWORK:-dace_cpu_autoopt}" \
+        --stats "${NS}/stats.json" --no-page3 \
+        ${CATEGORIES:+--categories "${CATEGORIES}"} \
+        ${THESIS_TITLE:+--title "${THESIS_TITLE}"} \
+        --output "${NS}/${CAMPAIGN}-${JOB}-thesis.pdf" \
+        --png-prefix "${NS}/${CAMPAIGN}-${JOB}-thesis"
+fi
+
 echo ""
 echo "================================================================"
 echo "  DIR      : ${NS}"
@@ -195,6 +224,10 @@ echo "  MANIFEST : ${NS}/manifest.json"
 echo "  STATUS   : ${NS}/status.json"
 echo "  SUMMARY  : ${NS}/summary.txt"
 echo "  PLOT     : ${NS}/m-verify-${JOB}.pdf"
+if [[ "${REPEAT}" -gt 1 ]]; then
+echo "  STATS    : ${NS}/stats.json | ${NS}/stats.csv"
+echo "  THESIS   : ${NS}/${CAMPAIGN}-${JOB}-thesis.pdf (+ -p1.png -p2.png)"
+fi
 echo "  LOG      : ${NS}/slurm-${JOB}.out"
 echo "================================================================"
 echo "=== finish $(date +%T)"

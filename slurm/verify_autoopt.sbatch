@@ -6,7 +6,7 @@
 # same kernels at preset M and compares them: same validation verdict, and timings consistent
 # within run-to-run noise.
 #
-#   sbatch -A g34 ~/npbench/slurm/verify_autoopt.sbatch
+#   sbatch -A <project> ~/npbench/slurm/verify_autoopt.sbatch
 #
 # REPEAT defaults to 3 here rather than 1: the question is whether two measurements of the same
 # SDFG agree, which needs some idea of the spread. This is still a correctness check, not a
@@ -66,7 +66,8 @@ KERNELS
 
 echo "=== autoopt equivalence: $(wc -l < "${NS}/kernels.txt") kernels x [${FRAMEWORKS}] preset=${PRESET} repeat=${REPEAT}"
 echo "=== node=$(hostname -s) ranks=${RANKS} cpus-per-task=${CPT}  ns=${NS}"
-echo "=== npbench=$(git -C "${REPO}" rev-parse --short HEAD) dace=$(git -C /users/levwidmer/dace rev-parse --abbrev-ref HEAD)@$(git -C /users/levwidmer/dace rev-parse --short HEAD)"
+DACE_TREE="${DACE_TREE:-${HOME}/dace}"
+echo "=== npbench=$(git -C "${REPO}" rev-parse --short HEAD) dace=$(git -C "${DACE_TREE}" rev-parse --abbrev-ref HEAD)@$(git -C "${DACE_TREE}" rev-parse --short HEAD)"
 echo "=== start $(date +%T)"
 
 BUILD_ROOT="${DACE_BUILD_ROOT:-${SCRATCH:-${REPO}}}/autoopt-eq-${JOB}"

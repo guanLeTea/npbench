@@ -681,6 +681,10 @@ def main():
     ap.add_argument("--run-label", default="",
                     help="how the run describes itself in the captions; defaults to run_kind(repeat)")
     ap.add_argument("--dace-column-label", default="DaCe\nauto_opt")
+    ap.add_argument("--violin-kernels", help="JSON [[kernel, caption], ...] replacing the "
+                                            "built-in VIOLIN_KERNELS on the distributions page")
+    ap.add_argument("--distributions-only", action="store_true",
+                    help="write only the distributions page (no overview/details pages)")
     ap.add_argument("--categories", help="JSON [[label, [kernel, ...]], ...] replacing the "
                                         "built-in PolyBench grouping")
     ap.add_argument("--title", default="NPBench PolyBench-derived kernels: Pluto vs DaCe auto_optimize")
@@ -707,14 +711,26 @@ def main():
         args.seed = meta.get("seed", args.seed)
         args.resamples = meta.get("resamples", args.resamples)
         by_pair = {(r["db_name"], r["framework"]): r for r in meta["pairs"]}
-        dist_figs.append(page_distributions(args, by_pair))
+        # `--violin-kernels` selects which kernels the distributions page draws. The built-in
+        # VIOLIN_KERNELS names PolyBench kernels, so a different corpus has to say what to plot.
+        violins = VIOLIN_KERNELS
+        if args.violin_kernels and pathlib.Path(args.violin_kernels).is_file():
+            violins = [(k, c) for k, c in json.loads(pathlib.Path(args.violin_kernels).read_text())]
+        dist_figs.append(page_distributions(args, by_pair, violins))
         if args.extra_violins:
             for group in EXTRA_VIOLIN_PAGES:
                 dist_figs.append(page_distributions(args, by_pair, group))
 
+    # `--distributions-only` writes the distributions page as the whole document, for a figure
+    # meant to stand on its own in a thesis rather than as page 3 of a report.
+    if args.distributions_only and dist_figs:
+        f1, f2 = None, None
+
     with PdfPages(args.output) as pdf:
-        pdf.savefig(f1)
-        pdf.savefig(f2)
+        if f1 is not None:
+            pdf.savefig(f1)
+        if f2 is not None:
+            pdf.savefig(f2)
         for _f in dist_figs:
             pdf.savefig(_f)
         # Carried in the document itself, not only in the printed caption: the toolchain is the
@@ -729,12 +745,17 @@ def main():
                             "repeat %d" % (" ".join(POLYCC_ARGS), args.preset, args.repeat))
         info["Creator"] = "npbench/slurm/plot_thesis.py"
     if args.png_prefix:
-        f1.savefig("%s-p1.png" % args.png_prefix, dpi=140)
-        f2.savefig("%s-p2.png" % args.png_prefix, dpi=140)
+        _n = 1
+        if f1 is not None:
+            f1.savefig("%s-p%d.png" % (args.png_prefix, _n), dpi=140); _n += 1
+        if f2 is not None:
+            f2.savefig("%s-p%d.png" % (args.png_prefix, _n), dpi=140); _n += 1
         for _i, _f in enumerate(dist_figs):
-            _f.savefig("%s-p%d.png" % (args.png_prefix, 3 + _i), dpi=190)
-    plt.close(f1)
-    plt.close(f2)
+            _f.savefig("%s-p%d.png" % (args.png_prefix, _n + _i), dpi=190)
+    if f1 is not None:
+        plt.close(f1)
+    if f2 is not None:
+        plt.close(f2)
     for _f in dist_figs:
         plt.close(_f)
     print("wrote %s" % args.output)

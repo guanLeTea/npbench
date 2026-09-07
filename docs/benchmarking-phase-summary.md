@@ -896,7 +896,7 @@ Code artifacts on branch `bench/daint-pluto`:
 | `npbench/infrastructure/pluto_framework.py` | the Pluto column, plus all recorded defect evidence |
 | `npbench/infrastructure/dace_autoopt_framework.py` | the `dace_cpu_autoopt` narrowing |
 | `framework_info/dace_cpu_autoopt.json` | framework registration |
-| `slurm/m_verify.sbatch` | the campaign launcher (all four campaigns) |
+| `slurm/run_campaign.sbatch` | the campaign launcher (all four campaigns) |
 | `slurm/npbench-env.sh` | environment, with fatal checks on every required tool |
 | `slurm/merge_db.py` | per-rank DB merge |
 | `slurm/collect_status.py` | per-pair classification, decline-reason capture |

@@ -6,7 +6,7 @@
 # and VALIDATE against the NumPy reference on a compute node, with the affinity the real campaign
 # will use. It is deliberately preset S and a short kernel list. Do not read speedups off it.
 #
-#   sbatch -A g34 ~/npbench/slurm/verify_small.sbatch
+#   sbatch -A <project> ~/npbench/slurm/verify_small.sbatch
 #
 # Overridable: PRESET, REPEAT, TIMEOUT, KERNELS, FRAMEWORKS.
 #
@@ -85,7 +85,7 @@ mkdir -p "${NS}"
 # Reproducibility stamp for the whole campaign. The DaCe branch/commit is also stamped on every
 # dace_cpu ROW (infrastructure/dace_framework.py::version -> the `version` column), so a merged
 # database stays interpretable even if this file is separated from it.
-DACE_TREE="${DACE_TREE:-/users/levwidmer/dace}"
+DACE_TREE="${DACE_TREE:-${HOME}/dace}"
 {
     echo "{"
     echo "  \"job\": \"${JOB}\","
@@ -136,7 +136,7 @@ KERNELS
 echo "=== npbench-verify: $(wc -l < "${NS}/kernels.txt") kernels x [${FRAMEWORKS}] preset=${PRESET} repeat=${REPEAT} ==="
 echo "=== node=$(hostname -s) ranks=${RANKS} cpus-per-task=${CPT} ==="
 echo "=== namespace=${NS} ==="
-echo "=== dace tree=/users/levwidmer/dace branch=$(git -C /users/levwidmer/dace branch --show-current 2>/dev/null) ==="
+echo "=== dace tree=${DACE_TREE} branch=$(git -C "${DACE_TREE}" branch --show-current 2>/dev/null) ==="
 echo "=== start $(date +%T) ==="
 
 # DaCe writes one .so per SDFG variant per kernel. Off /tmp (tmpfs on these nodes -- the build

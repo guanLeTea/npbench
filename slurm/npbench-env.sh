@@ -26,14 +26,14 @@
 # the job by accident. Only an EXPLICIT fatal check does, and it does so with a named cause.
 
 # ---- site-specific paths (edit these if the layout changes) ---------------------------------
-NPBENCH_ENV_REPO="${NPBENCH_ENV_REPO:-/users/levwidmer/npbench}"
+NPBENCH_ENV_REPO="${NPBENCH_ENV_REPO:-${HOME}/npbench}"
 NPBENCH_ENV_VENV="${NPBENCH_ENV_REPO}/.venv/bin/activate"
 # LLVM 17.0.6 is the version this Pluto's pet was built against (--with-clang-prefix); it also
 # supplies the clang that compiles polycc's transformed C. Keep the two in lockstep.
-NPBENCH_ENV_LLVM_PREFIX="/capstor/scratch/cscs/levwidmer/opt/llvm-17.0.6"
+NPBENCH_ENV_LLVM_PREFIX="${NPBENCH_ENV_LLVM_PREFIX:-${SCRATCH}/opt/llvm-17.0.6}"
 NPBENCH_ENV_LLVM_BIN="${NPBENCH_ENV_LLVM_PREFIX}/bin"
 NPBENCH_ENV_LLVM_LIB="${NPBENCH_ENV_LLVM_PREFIX}/lib"   # libomp.so + libclang-cpp.so.17 (pet)
-NPBENCH_ENV_PLUTO_BIN="/capstor/scratch/cscs/levwidmer/opt/pluto/bin"   # polycc
+NPBENCH_ENV_PLUTO_BIN="${NPBENCH_ENV_PLUTO_BIN:-${SCRATCH}/opt/pluto/bin}"   # polycc
 NPBENCH_ENV_UENV_HINT="uenv start --view=default prgenv-gnu/26.3:v1"
 
 _npbench_env_main() {
@@ -156,7 +156,7 @@ _npbench_env_main() {
         echo "  python      $(python --version 2>&1)"
         echo "  numpy       $(python -c 'import numpy;print(numpy.__version__)' 2>/dev/null)"
         echo "  dace        $(python -c 'import dace;print(dace.__version__, dace.__file__)' 2>/dev/null)"
-        echo "  dace branch $(git -C /users/levwidmer/dace branch --show-current 2>/dev/null)"
+        echo "  dace branch $(git -C "${DACE_TREE:-${HOME}/dace}" branch --show-current 2>/dev/null)"
         echo "  gcc/g++     $(gcc -dumpfullversion 2>/dev/null) / $(g++ -dumpfullversion 2>/dev/null)"
         echo "  cmake       $(cmake --version 2>/dev/null | head -1)"
         echo "  clang       $(clang --version 2>/dev/null | head -1)"
