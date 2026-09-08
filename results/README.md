@@ -10,6 +10,14 @@ the `paper` preset and 50 timed repetitions per successful kernel/framework pair
 | `nonpoly-dace50-4525319` | Complete DaCe remeasurement for all 31 kernels at a newer DaCe revision. |
 | `nonpoly-final50-dace-fixed` | Final derived comparison: NumPy/Pluto from job 4523913, with the entire DaCe column replaced by job 4525319. This is not a single Slurm campaign. |
 
+`nonpoly-dace50-4525319` is a DaCe-only remeasurement: all 31 DaCe kernels validated
+(1550 of 1550 timing rows), and it intentionally carries no NumPy or Pluto rows. Because
+a speedup needs a NumPy baseline, the thesis and m-verify reports generated inside that
+directory fall through to an "invalid" presentation for the DaCe cells. That label means
+"no speedup ratio could be computed here", **not** that the measurements failed numerical
+validation. The authoritative comparison is `nonpoly-final50-dace-fixed`, which pairs those
+valid DaCe timings with the NumPy/Pluto measurements from job 4523913.
+
 Each directory contains `manifest.json`, a merged `npbench.db`, `kernels.txt`,
 `stats.json`/`stats.csv`, `status.json`, and PDF/PNG reports. Dispersion reports are
 included where available. Source campaigns also retain `summary.txt`, Slurm output,
